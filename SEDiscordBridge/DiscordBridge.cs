@@ -1,5 +1,6 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using Sandbox.Game;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using System;
@@ -23,7 +24,7 @@ namespace SEDiscordBridge
         private ulong botId = 0;
         private int retry = 0;
         public DiscordConfiguration DiscordConfiguration { get; set; }
-        public bool Ready { get; set; } = false;
+        public static bool Ready { get; set; } = false;
         public static DiscordClient Discord { get; set; }
 
         public static int Cooldown;
@@ -98,6 +99,7 @@ namespace SEDiscordBridge
             Discord.Ready += async (c, e) =>
             {
                 Ready = true;
+                MsgWorker.DoLoad();
                 await Task.CompletedTask;
             };
 
@@ -158,7 +160,7 @@ namespace SEDiscordBridge
                     //mention
                     msg = MentionNameToID(msg, chann);
                     msg = Plugin.Config.SimMessage.Replace("{ts}", TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToString());
-                    botId = Discord.SendMessageAsync(chann, msg.Replace("/n", "\n")).Result.Author.Id;
+                    MsgWorker.SendToDiscord(chann, msg.Replace("/n", "\n"), true);
                 }
             }
             catch (Exception e)
@@ -183,7 +185,7 @@ namespace SEDiscordBridge
                         msg = Plugin.Config.Format.Replace("{msg}", msg).Replace("{p}", user).Replace("{ts}", TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToString());
 
                     try {
-                        botId = Discord.SendMessageAsync(chann, msg.Replace("/n", "\n")).Result.Author.Id;
+                        MsgWorker.SendToDiscord(chann, msg.Replace("/n", "\n"), true);
                     }
                     catch (DSharpPlus.Exceptions.RateLimitException) {
                         if (retry <= 5) {
@@ -229,7 +231,7 @@ namespace SEDiscordBridge
                         if (user != null)
                             msg = Plugin.Config.FacFormat.Replace("{msg}", msg).Replace("{p}", user).Replace("{ts}", TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToString());
 
-                        botId = Discord.SendMessageAsync(chann, msg.Replace("/n", "\n")).Result.Author.Id;
+                        MsgWorker.SendToDiscord(chann, msg.Replace("/n", "\n"), true);
                     }
                 }
             }
@@ -237,6 +239,35 @@ namespace SEDiscordBridge
             {
                 SEDiscordBridgePlugin.Log.Error($"SendFacChatMessage: {e.Message}");
             }
+        }
+
+        public Task SendStatusMessage(string user, ulong steamID, string msg)
+        {
+            if (Plugin.Config.StatusChannelId.Length > 0)
+            {
+                try
+                {
+                    DiscordChannel chann = Discord.GetChannelAsync(ulong.Parse(Plugin.Config.StatusChannelId)).Result;
+                    if (user != null)
+                    {
+                        if (user.StartsWith("ID:"))
+                            return Task.CompletedTask;
+
+                        if (Plugin.Config.DisplaySteamId)
+                        {
+                            user = $"{user} ({steamID.ToString()})";
+                        }
+
+                        msg = msg.Replace("{p}", user).Replace("{ts}", TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToString());
+                    }
+                    MsgWorker.SendToDiscord(chann, msg.Replace("/n", "\n"), true);
+                }
+                catch (Exception e)
+                {
+                    Logging.Instance.LogError(GetType(), e);
+                }
+            }
+            return Task.CompletedTask;
         }
 
         public void SendStatusMessage(string user, string msg, Torch.API.IPlayer obj = null)
@@ -258,7 +289,7 @@ namespace SEDiscordBridge
                         msg = msg.Replace("{p}", user).Replace("{ts}", TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToString());
                     }
 
-                    botId = Discord.SendMessageAsync(chann, msg.Replace("/n", "\n")).Result.Author.Id;
+                    MsgWorker.SendToDiscord(chann, msg.Replace("/n", "\n"), true);
                 }
                 catch (Exception e)
                 {
@@ -380,14 +411,14 @@ namespace SEDiscordBridge
                             sender = e.Guild.GetMemberAsync(e.Author.Id).Result.Username;
                     }
 
-                    var manager = Plugin.Torch?.CurrentSession?.Managers?.GetManager<IChatManagerServer>();
-                    if (manager != null) {
-                        var dSender = Plugin.Config.Format2.Replace("{p}", sender);
-                        var msg = MentionIDToName(e.Message);
-                        lastMessage = dSender + msg;
-                    	manager.SendMessageAsOther(dSender, msg,
-                        	typeof(MyFontEnum).GetFields().Select(x => x.Name).Where(x => x.Equals(Plugin.Config.GlobalColor)).First());
-                    }
+                    var dSender = Plugin.Config.Format2.Replace("{p}", sender);
+                    var msg = MentionIDToName(e.Message);
+
+                    if (lastMessage.Equals(dSender + msg)) return Task.CompletedTask;
+
+                    lastMessage = dSender + msg;
+                    MyVisualScriptLogicProvider.SendChatMessageColored(msg, VRageMath.Color.MediumPurple, dSender, default, Plugin.Config.GlobalColor);
+
                 }
 
                 //send to faction

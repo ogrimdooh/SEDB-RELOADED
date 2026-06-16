@@ -1,5 +1,6 @@
-﻿using NLog;
-using DSharpPlus.Entities;
+﻿using DSharpPlus.Entities;
+using HarmonyLib;
+using NLog;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Gui;
@@ -47,13 +48,22 @@ namespace SEDiscordBridge
         private IMultiplayerManagerBase _multibase;
         private readonly List<TorchChatMessage> _uniqueMessages = new List<TorchChatMessage>();
         private Timer _timer;
-        public bool DEBUG = false;
         private TorchServer torchServer;
 
         private readonly HashSet<ulong> _conecting = new HashSet<ulong>();
 
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         public static SEDiscordBridgePlugin Static { get; private set; }
+
+        public static bool DEBUG
+        {
+            get
+            {
+                if (Static != null)
+                    return Static.Config?.DebugMode ?? false;
+                return false;
+            }
+        }
 
         /// <inheritdoc />
         public UserControl GetControl() => _control ??= new SEDBControl(this);
@@ -67,6 +77,17 @@ namespace SEDiscordBridge
             base.Init(torch);
             torchServer = (TorchServer)torch;
             Static = this;
+
+            var harmony = new Harmony("SEDiscordBridge");
+            try
+            {
+                PatchController.PatchMethods();
+            }
+            catch (Exception e)
+            {
+                Logging.Instance.LogError(GetType(), e, "PATCHING FAILED ");
+            }
+
             //Init config
             InitConfig();
 
@@ -271,18 +292,14 @@ namespace SEDiscordBridge
 
             if (Torch.CurrentSession != null)
             {
-                if (_multibase == null)
-                {
-                    _multibase = Torch.CurrentSession.Managers.GetManager<IMultiplayerManagerBase>();
 
-                    if (_multibase == null)
-                        Log.Warn("No join/leave manager loaded!");
-                    else
-                    {
-                        _multibase.PlayerJoined += Multibase_PlayerJoined;
-                        _multibase.PlayerLeft += Multibase_PlayerLeft;
-                        MyEntities.OnEntityAdd += MyEntities_OnEntityAdd;
-                    }
+                try
+                {
+                    GameWatcherController.Init();
+                }
+                catch (Exception e)
+                {
+                    Logging.Instance.LogError(GetType(), e, "WATCHER FAILED ");
                 }
 
                 if (_chatmanager == null)
@@ -337,10 +354,10 @@ namespace SEDiscordBridge
         {
             if (!Config.Enabled || DDBridge == null) return;
 
-            if (DDBridge.Ready)
+            if (DiscordBridge.Ready)
                 TickRetry = 0;
 
-            if (!DDBridge.Ready)
+            if (!DiscordBridge.Ready)
             {
                 if (TickRetry == 5)
                 {
@@ -351,7 +368,7 @@ namespace SEDiscordBridge
                 {
                     if (TickRetry > 24)
                     {
-                        DDBridge.Ready = false;
+                        DiscordBridge.Ready = false;
                         TickRetry = 0;
                         DiscordBridge.Discord.DisconnectAsync();
                         DiscordBridge.Discord.Dispose();
@@ -364,7 +381,7 @@ namespace SEDiscordBridge
             }
             else if (DiscordBridge.Discord.Ping == 0)
             {
-                DDBridge.Ready = false;
+                DiscordBridge.Ready = false;
                 TickRetry = 0;
                 DiscordBridge.Discord.DisconnectAsync();
                 DiscordBridge.Discord.Dispose();
@@ -437,68 +454,48 @@ namespace SEDiscordBridge
             }
         }
 
-        private async void Multibase_PlayerLeft(IPlayer obj)
-        {
-            if (!Config.Enabled) return;
-
-            //Remove to conecting list
-            _conecting.Remove(obj.SteamId);
-
-            if (Config.Leave.Length > 0 && (!(obj.Name.StartsWith("[") && obj.Name.EndsWith("]") && obj.Name.Contains("..."))))
-                await Task.Run(() => DDBridge.SendStatusMessage(obj.Name, Config.Leave, obj));
-        }
-
-        private async void Multibase_PlayerJoined(IPlayer obj)
-        {
-            if (!Config.Enabled) return;
-
-            //Add to conecting list
-            _conecting.Add(obj.SteamId);
-            if (Config.Connect.Length > 0)
-                await Task.Run(() => DDBridge.SendStatusMessage(obj.Name, Config.Connect, obj));
-        }
-
-        private void MyEntities_OnEntityAdd(VRage.Game.Entity.MyEntity obj)
-        {
-            if (!Config.Enabled) return;
-
-            if (obj is MyCharacter character)
-            {
-                var manager = Torch.CurrentSession?.Managers?.GetManager<IChatManagerServer>();
-                Task.Run(() =>
-                {
-                    System.Threading.Thread.Sleep(1000);
-                    if (_conecting.Contains(character.ControlSteamId) && character.IsPlayer && Config.Join.Length > 0)
-                    {
-                        DDBridge.SendStatusMessage(character.DisplayName, Config.Join);
-                        _conecting.Remove(character.ControlSteamId);
-                    }
-                });
-            }
-        }
-
-        /// <inheritdoc />        
+        /// <inheritdoc />
+        private static bool _disposed = false;
         public override void Dispose()
         {
-            if (_multibase != null)
+            if (_disposed)
             {
-                _multibase.PlayerJoined -= Multibase_PlayerJoined;
-                MyEntities.OnEntityAdd -= MyEntities_OnEntityAdd;
-                _multibase.PlayerLeft -= Multibase_PlayerLeft;
+                if (DEBUG)
+                {
+                    Logging.Instance.LogInfo(GetType(), "SEDB already disposed!");
+                }
             }
-            _multibase = null;
+            else
+            {
+                _disposed = true;
+                try
+                {
+                    Logging.Instance.LogInfo(GetType(), "Unloading SEDB Lite!");
+                    if (Static != null)
+                    {
+                        Static.DDBridge.SendStatusMessage(default, default, Static.Config.Stopped).Wait();
+                        MsgWorker.DisconnectAfterSendAllMsgs(Static.DDBridge);
+                    }
+                    GameWatcherController.Dispose();
+                }
+                catch (Exception e)
+                {
+                    Logging.Instance.LogError(typeof(SEDiscordBridgePlugin), e);
+                }
 
-            if (_sessionManager != null)
-                _sessionManager.SessionStateChanged -= SessionChanged;
+                if (_sessionManager != null)
+                    _sessionManager.SessionStateChanged -= SessionChanged;
 
-            _sessionManager = null;
+                _sessionManager = null;
 
-            if (_chatmanager != null)
-                _chatmanager.MessageRecieved -= MessageReceived;
+                if (_chatmanager != null)
+                    _chatmanager.MessageRecieved -= MessageReceived;
 
-            _chatmanager = null;
+                _chatmanager = null;
 
-            StopTimer();
+                StopTimer();
+
+            }
         }
     }
 }
