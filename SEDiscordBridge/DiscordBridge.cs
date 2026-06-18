@@ -25,6 +25,7 @@ namespace SEDiscordBridge
         private int retry = 0;
         public DiscordConfiguration DiscordConfiguration { get; set; }
         public static bool Ready { get; set; } = false;
+        public static event Action OnReady;
         public static DiscordClient Discord { get; set; }
 
         public static int Cooldown;
@@ -100,6 +101,8 @@ namespace SEDiscordBridge
             {
                 Ready = true;
                 MsgWorker.DoLoad();
+                if (OnReady != null)
+                    OnReady.Invoke();
                 await Task.CompletedTask;
             };
 

@@ -1,20 +1,25 @@
 ﻿using DSharpPlus.Entities;
 using HarmonyLib;
 using NLog;
+using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Gui;
 using Sandbox.Game.World;
+using SEDiscordBridge.Patches;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using Torch;
 using Torch.API;
 using Torch.API.Managers;
@@ -24,6 +29,7 @@ using Torch.Managers;
 using Torch.Managers.ChatManager;
 using Torch.Server;
 using Torch.Session;
+using VRage.Game;
 using VRage.Game.ModAPI;
 using Timer = System.Timers.Timer;
 
@@ -90,6 +96,9 @@ namespace SEDiscordBridge
 
             //Init config
             InitConfig();
+
+            //Set events
+            DiscordBridge.OnReady += DiscordBridge_OnReady;
 
             //pre-load
             if (Config.Enabled) LoadSEDB();
@@ -266,10 +275,264 @@ namespace SEDiscordBridge
             return roleData;
         }
 
+        private const string SEASON_META_START_MESSAGE_TEMPLATE = @":satellite: **THE SECOND DAWN — JUMP STATUS TERMINAL**
+
+This channel is maintained by **D.A.W.N. — Distributed Ark Watch Network**.
+Every cycle, the Ark gathers fuel, materials, provisions, and strategic cargo required to perform the next interstellar jump. Contributions from all registered explorers and factions are processed through the Ark logistics network and reflected here.
+Status reports are refreshed automatically. Outdated transmissions are purged to preserve terminal clarity.
+
+---";
+
+        private const string SEASON_META_OVERALL_MESSAGE_TEMPLATE = @":scales:  **JUMP PREPARATION STATUS**
+
+Overall Progress: **{0}**
+Next Weekly Checkpoint: **{1}**
+Next Ark Jump: **{2}**
+
+Current Protocol: **Resource Acquisition**
+Ark Status: **{3}**
+Risk Level: **{4}**
+
+---";
+
+        private const string SEASON_META_CATEGORY_MESSAGE_TEMPLATE = @"{0} **{1}**
+Progress Weight: {2}
+
+{3} / {4} {5} — **{6}**
+
+**Accepted Cargo:**
+{7}
+---";
+
+        private string GetCategoryEmoji(SeasonMetaEntryType type)
+        {
+            return type switch
+            {
+                SeasonMetaEntryType.RawResource => ":pick:",
+                SeasonMetaEntryType.RefinedResource => ":hammer_pick:",
+                SeasonMetaEntryType.AssembledComponent => ":tools:",
+                SeasonMetaEntryType.Fuel => ":fuelpump:",
+                SeasonMetaEntryType.SurvivalResource => ":meat_on_bone:",
+                SeasonMetaEntryType.Ammo => ":gun:",
+                SeasonMetaEntryType.WeaponAndTool => ":toolbox:",
+                _ => ":package:"
+            };
+        }
+
+        private string GetCategoryUnit(SeasonMetaEntryType type)
+        {
+            return type switch
+            {
+                SeasonMetaEntryType.RawResource => "Kg",
+                SeasonMetaEntryType.RefinedResource => "Kg",
+                SeasonMetaEntryType.AssembledComponent => "U",
+                SeasonMetaEntryType.Fuel => "Kg",
+                SeasonMetaEntryType.SurvivalResource => "U",
+                SeasonMetaEntryType.Ammo => "U",
+                SeasonMetaEntryType.WeaponAndTool => "U",
+                _ => "U"
+            };
+        }
+
+        private string GetSeasonMetaStatusString(float currentProgress)
+        {
+            if (currentProgress < 0.25f)
+                return "Critical Supply Shortage";
+            else if (currentProgress < 0.5f)
+                return "Below Required Threshold";
+            else if (currentProgress < 0.75f)
+                return "Operational, Understocked";
+            else if (currentProgress < 1.0f)
+                return "Jump Window Approaching";
+            else
+                return "Jump Ready";
+        }
+
+        private string GetSeasonMetaSubStatusString(float currentProgress)
+        {
+            if (currentProgress < 0.25f)
+                return "High";
+            else if (currentProgress < 0.5f)
+                return "Elevated";
+            else if (currentProgress < 0.75f)
+                return "Stable";
+            else if (currentProgress < 1.0f)
+                return "Low";
+            else
+                return "Minimal";
+        }
+
+        private string GetItemDisplayName(StorageDefinitionId id)
+        {
+            var definition = MyDefinitionManager.Static.GetPhysicalItemDefinition(id.ToMyDefinitionId());
+            if (definition != null)
+                // Retorna somente a primeira linha do nome se tiver quebra de linha, para evitar mensagens muito longas no Discord
+                return definition.DisplayNameText.Split('\n')[0];
+            return id.ToString();
+        }
+
+        public async Task RefreshSeasonMetaChannel()
+        {
+            Log.Info("Refreshing Season Meta Channel...");
+            if (!string.IsNullOrWhiteSpace(Config.SeasonMetaChannelID) && SEDBStorage.Instance.SeasonMeta.Enabled)
+            {
+                Log.Info("Season Meta is enabled, updating channel...");
+                var seasonConfig = SEDBStorage.Instance.SeasonMeta.GetActiveConfiguration();
+                var seasonResult = SEDBStorage.Instance.SeasonMeta.GetActiveResult();
+                if (seasonConfig != null && seasonResult != null)
+                {
+                    Log.Info("Season Meta configuration and result found, updating channel...");
+                    try
+                    {
+                        var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.SeasonMetaChannelID)).Result;
+                        if (channel != null)
+                        {
+                            Log.Info("Season Meta channel found, updating messages...");
+                            // Limpa mensagens antigas
+                            var needNewMessages = false;
+                            var messages = await channel.GetMessagesAsync(100);
+                            if (messages.Any()) 
+                            {
+                                Log.Info($"Found {messages.Count} messages in the channel, checking if they match expected count and IDs...");
+                                // Calcula o total de mensagens que deveriam estar no canal (mensagem geral + mensagens de categoria)
+                                var expectedMessageCount = 2 + seasonConfig.Entries.Count; // 2 para a mensagem geral + 1 para cada categoria
+                                // Verifica se todas as mensagens com ids salvos existem, caso contrário, limpa o canal para evitar mensagens desatualizadas
+                                var ids = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.GetAllMessagesIds();
+                                var msgsIds = messages.Select(m => m.Id).ToHashSet();
+                                Log.Info($"Expected message count: {expectedMessageCount}, actual message count: {messages.Count}, expected IDs: {string.Join(", ", ids)}, actual IDs: {string.Join(", ", msgsIds)}");
+                                if (expectedMessageCount != messages.Count || 
+                                    expectedMessageCount != ids.Count || 
+                                    !ids.All(id => msgsIds.Any(m => m != 0 && m == id)))
+                                {
+                                    Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
+                                    await channel.DeleteMessagesAsync(messages);
+                                    needNewMessages = true;
+                                }
+                                else
+                                {
+                                    Log.Info("All expected messages are present, will update existing messages...");
+                                }
+                            }
+                            // Envia nova mensagem com os dados atualizados
+                            if (needNewMessages) 
+                            {
+                                Log.Info("Sending new start message to the channel...");
+                                MsgWorker.SendToDiscord(channel, SEASON_META_START_MESSAGE_TEMPLATE.Replace("/n", "\n"), true, (dMsg) =>
+                                {
+                                    SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.StartMsgId = dMsg.Id;
+                                });
+                            } 
+                            else
+                            {
+                                Log.Info("Updating existing start message...");
+                                // Atualiza a mensagem geral
+                                var generalMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.StartMsgId;
+                                var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
+                                if (generalMsg != null)
+                                {
+                                    await generalMsg.ModifyAsync(SEASON_META_START_MESSAGE_TEMPLATE.Replace("/n", "\n"));
+                                }
+                            }
+                            // Envia mensagem com o progresso geral
+                            var currentProgress = SEDBStorage.Instance.SeasonMeta.GetCurrentProgress();
+                            var nextCheckpoint = SEDBStorage.Instance.SeasonMeta.GetTimeToNextCheckpoint();
+                            var nextSeason = SEDBStorage.Instance.SeasonMeta.GetTimeToNextSeason();
+                            var overallMessage = string.Format(SEASON_META_OVERALL_MESSAGE_TEMPLATE, 
+                                currentProgress.ToString("P2"), 
+                                nextCheckpoint.ToString(@"d'd 'm'm 's's'"), 
+                                nextSeason.ToString(@"d'd 'm'm 's's'"),
+                                GetSeasonMetaStatusString(currentProgress),
+                                GetSeasonMetaSubStatusString(currentProgress)
+                            );
+                            if (needNewMessages) 
+                            {
+                                Log.Info("Sending new overall progress message to the channel...");
+                                MsgWorker.SendToDiscord(channel, overallMessage, true, (dMsg) =>
+                                {
+                                    SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.OverAllMsgId = dMsg.Id;
+                                });
+                            } 
+                            else
+                            {
+                                Log.Info("Updating existing overall progress message...");
+                                var overallMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.OverAllMsgId;
+                                var overallMsg = messages.FirstOrDefault(m => m.Id == overallMsgId);
+                                if (overallMsg != null)
+                                {
+                                    await overallMsg.ModifyAsync(overallMessage);
+                                }
+                            }
+                            // Envia mensagens
+                            var allProgress = SEDBStorage.Instance.SeasonMeta.GetActiveResultProgress();
+                            Log.Info($"Updating category messages, total categories: {seasonConfig.Entries.Count}, progress entries: {allProgress.Count}...");
+                            foreach (var item in seasonConfig.Entries)
+                            {
+                                var categoryInfo = SEDBStorage.Instance.SeasonMeta.GetCategoryById(item.CategoryId);
+                                if (categoryInfo != null && allProgress.ContainsKey(item.CategoryId))
+                                {
+                                    var resultEntry = seasonResult.Entries.FirstOrDefault(e => e.CategoryId == item.CategoryId);
+                                    var itemProgress = allProgress[item.CategoryId];
+                                    var categoryItemsByWeight = categoryInfo.Items.GroupBy(x => x.Weight).ToDictionary(x => x.Key, x => x.ToList());
+                                    var sb = new StringBuilder();
+                                    foreach (var weight in categoryItemsByWeight.Keys.OrderBy(x => x))
+                                    {
+                                        sb.AppendLine($"- Logistic Value {weight}: " + string.Join(", ", categoryItemsByWeight[weight].Select(i => $"{GetItemDisplayName(i.Id)}")));
+                                    }
+                                    var categoryMessage = string.Format(SEASON_META_CATEGORY_MESSAGE_TEMPLATE,
+                                        GetCategoryEmoji(categoryInfo.Type),
+                                        categoryInfo.Name,
+                                        itemProgress.Y,
+                                        resultEntry.Amount.ToString("N0"),
+                                        item.Amount.ToString("N0"),
+                                        GetCategoryUnit(categoryInfo.Type),
+                                        itemProgress.X.ToString("P2"),
+                                        sb.ToString()
+                                    );
+                                    if (needNewMessages)
+                                    {
+                                        Log.Info($"Sending new message for category {categoryInfo.Name} to the channel...");
+                                        MsgWorker.SendToDiscord(channel, categoryMessage, true, (dMsg) => {
+                                            SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.CategoriesMsgIds.Add(new SeasonMetaChatEntryId()
+                                            {
+                                                CategoryId = item.CategoryId,
+                                                MsgId = dMsg.Id
+                                            });
+                                        });
+                                    } 
+                                    else
+                                    {
+                                        Log.Info($"Updating existing message for category {categoryInfo.Name}...");
+                                        var categoryMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.CategoriesMsgIds.FirstOrDefault(m => m.CategoryId == item.CategoryId)?.MsgId;
+                                        if (categoryMsgId != null)
+                                        {
+                                            var categoryMsg = messages.FirstOrDefault(m => m.Id == categoryMsgId);
+                                            if (categoryMsg != null)
+                                            {
+                                                await categoryMsg.ModifyAsync(categoryMessage);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Logging.Instance.LogError(GetType(), e, "SEASON META CHANNEL UPDATE FAILED ");
+                    }
+                }
+            }
+        }
+
+        private bool _seasonMetaCanBeRefreshing = false;
+        private bool _seasonMetaNeedRefreshing = false;
         public void LoadSEDB()
         {
             if (DDBridge == null)
                 DDBridge = new DiscordBridge(this);
+
+            _seasonMetaCanBeRefreshing = false;
+            _seasonMetaNeedRefreshing = true;
 
             if (Config.LoadRanks)
                 ReflectEssentials();
@@ -302,6 +565,13 @@ namespace SEDiscordBridge
                     Logging.Instance.LogError(GetType(), e, "WATCHER FAILED ");
                 }
 
+                _seasonMetaCanBeRefreshing = true;
+                if (DiscordBridge.Ready)
+                {
+                    RefreshSeasonMetaChannel().Wait();
+                    _seasonMetaNeedRefreshing = false;
+                }
+
                 if (_chatmanager == null)
                 {
                     _chatmanager = Torch.CurrentSession.Managers.GetManager<ChatManagerServer>();
@@ -316,6 +586,15 @@ namespace SEDiscordBridge
                 InitPost();
 
             Log.Info("Discord Bridge loaded!");
+        }
+
+        private void DiscordBridge_OnReady()
+        {
+            if (_seasonMetaNeedRefreshing && _seasonMetaCanBeRefreshing)
+            {
+                RefreshSeasonMetaChannel().Wait();
+                _seasonMetaNeedRefreshing = false;
+            }
         }
 
         private void InitPost()

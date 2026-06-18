@@ -11,6 +11,9 @@ namespace SEDiscordBridge.Patches
         [XmlElement]
         public long Amount { get; set; }
 
+        [XmlElement]
+        public int Weight { get; set; }
+        
     }
 
 }

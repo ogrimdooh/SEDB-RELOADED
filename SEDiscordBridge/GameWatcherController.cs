@@ -45,6 +45,8 @@ namespace SEDiscordBridge
                 MySession.Static.OnReady += Static_OnReady;
                 Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to MySession OnUnloading");
                 MySession.OnUnloading += MySession_OnUnloading;
+                Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to MySession OnSaved");
+                MySession.OnSaved += MySession_OnSaved;
                 if (MySession.Static.Factions != null)
                 {
                     Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to FactionCreated");
@@ -361,6 +363,11 @@ namespace SEDiscordBridge
             }
         }
 
+        private static void MySession_OnSaved(bool p1, string p2)
+        {
+            SEDBStorage.Save();
+        }
+
         private static void MySession_OnUnloading()
         {
             SEDBStorage.Save();
@@ -495,6 +502,7 @@ namespace SEDiscordBridge
             {
                 MySession.Static.OnReady -= Static_OnReady;
                 MySession.OnUnloading -= MySession_OnUnloading;
+                MySession.OnSaved -= MySession_OnSaved;
 
                 if (MySession.Static.Factions != null)
                 {

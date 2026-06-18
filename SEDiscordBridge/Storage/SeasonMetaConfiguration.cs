@@ -13,6 +13,12 @@ namespace SEDiscordBridge.Patches
         [XmlElement]
         public string Name { get; set; }
 
+        [XmlElement]
+        public long HoursBetweenCheckpoints { get; set; } = 24;
+
+        [XmlElement]
+        public long TotalCheckpoints { get; set; } = 16;
+
         [XmlArray("Entries"), XmlArrayItem("Entry", typeof(SeasonMetaEntry))]
         public List<SeasonMetaEntry> Entries { get; set; } = new List<SeasonMetaEntry>();
 

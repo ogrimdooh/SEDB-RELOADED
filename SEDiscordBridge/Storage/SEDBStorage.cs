@@ -11,6 +11,8 @@ namespace SEDiscordBridge.Patches
 
         private const int CURRENT_VERSION = 1;
         private const string FILE_NAME = "SEDB.Storage.xml";
+        private const string JSON_FILE_NAME = "SEDB.Storage.json";
+        private const bool USE_JSON = true;
 
         public const string KEY_DID_JUMP = "KEY_DID_JUMP";
         public const string KEY_JUMP_COUNT = "KEY_JUMP_COUNT";
@@ -48,7 +50,7 @@ namespace SEDiscordBridge.Patches
 
         public static SEDBStorage Load()
         {
-            _instance = Load(FILE_NAME, CURRENT_VERSION, Validate, () => { return new SEDBStorage(); }, Upgrade);
+            _instance = Load(USE_JSON, FILE_NAME, JSON_FILE_NAME, CURRENT_VERSION, Validate, () => { return new SEDBStorage(); }, Upgrade);
             return _instance;
         }
 
@@ -56,7 +58,7 @@ namespace SEDiscordBridge.Patches
         {
             try
             {
-                Save(Instance, FILE_NAME);
+                Save(Instance, USE_JSON, FILE_NAME, JSON_FILE_NAME);
             }
             catch (Exception e)
             {

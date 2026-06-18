@@ -20,6 +20,7 @@ namespace SEDiscordBridge
             public string Message { get; set; }
             public DateTime Time { get; set; }
             public bool LongLive { get; set; }
+            public Action<DSharpPlus.Entities.DiscordMessage> CallBack { get; set; }
 
         }
         
@@ -52,7 +53,13 @@ namespace SEDiscordBridge
                                 
                                 if (DiscordBridge.Discord != null && DiscordBridge.Ready)
                                 {
-                                    DiscordBridge.Discord.SendMessageAsync(msgToSend.Chann, msgToSend.Message.Replace("/n", "\n")).Wait();
+                                    var task = DiscordBridge.Discord.SendMessageAsync(msgToSend.Chann, msgToSend.Message.Replace("/n", "\n"));
+                                    task.Wait();
+                                    if (msgToSend.CallBack != null)
+                                    {
+                                        msgToSend.CallBack.Invoke(task.Result);
+                                    }
+                                    Logging.Instance.LogInfo(typeof(MsgWorker), $"Message sent : MSG={task.Result.Id}");
                                 }
                                 else
                                 {
@@ -98,14 +105,15 @@ namespace SEDiscordBridge
             }
         }
 
-        public static void SendToDiscord(DiscordChannel chann, string msg, bool longLive)
+        public static void SendToDiscord(DiscordChannel chann, string msg, bool longLive, Action<DSharpPlus.Entities.DiscordMessage> callBack = null)
         {
             messagesToSend.Enqueue(new DiscordMessage()
             {
                 Chann = chann,
                 Message = msg,
                 Time = DateTime.Now,
-                LongLive = longLive
+                LongLive = longLive,
+                CallBack = callBack
             });
             if (SEDiscordBridgePlugin.DEBUG)
             {

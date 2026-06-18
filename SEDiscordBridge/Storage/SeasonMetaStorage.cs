@@ -1,12 +1,14 @@
 ﻿using Sandbox.Common.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Definitions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
 using VRage.Game;
 using VRage.Library.Utils;
 using VRage.ObjectBuilders;
+using VRageMath;
 
 namespace SEDiscordBridge.Patches
 {
@@ -26,6 +28,9 @@ namespace SEDiscordBridge.Patches
         [XmlElement]
         public bool FirstLoad { get; set; } = true;
 
+        [XmlElement]
+        public SeasonMetaChatMessagesIds ChatMessagesIds { get; set; } = new SeasonMetaChatMessagesIds();
+
         [XmlArray("Categories"), XmlArrayItem("Category", typeof(SeasonMetaCategory))]
         public List<SeasonMetaCategory> Categories { get; set; } = new List<SeasonMetaCategory>();
 
@@ -34,6 +39,76 @@ namespace SEDiscordBridge.Patches
 
         [XmlArray("Results"), XmlArrayItem("Result", typeof(SeasonMetaResult))]
         public List<SeasonMetaResult> Results { get; set; } = new List<SeasonMetaResult>();
+
+        public SeasonMetaConfiguration GetActiveConfiguration()
+        {
+            return Configurations.FirstOrDefault(x => x.Id == ActiveConfiguration);
+        }
+
+        public SeasonMetaResult GetActiveResult()
+        {
+            return Results.FirstOrDefault(x => x.Id == ActiveResult);
+        }
+
+        public Dictionary<string, Vector2> GetActiveResultProgress()
+        {
+            var result = GetActiveResult();
+            if (result == null) return new Dictionary<string, Vector2>();
+            var configuration = GetActiveConfiguration();
+            if (configuration == null) return new Dictionary<string, Vector2>();
+            var progress = new Dictionary<string, Vector2>();
+            foreach (var entry in result.Entries)
+            {
+                var configEntry = configuration.Entries.FirstOrDefault(x => x.CategoryId == entry.CategoryId);
+                if (configEntry != null && configEntry.Amount > 0)
+                {
+                    progress[entry.CategoryId] = new Vector2((float)entry.Amount / configEntry.Amount, configEntry.Weight);
+                }
+                else
+                {
+                    progress[entry.CategoryId] = new Vector2(0f, 0f);
+                }
+            }
+            return progress;
+        }
+
+        public float GetCurrentProgress()
+        {
+            var progress = GetActiveResultProgress();
+            if (progress.Count == 0) return 0f;
+            var allValues = new List<float>();
+            foreach (var item in progress.Keys)
+            {
+                for (int i = 0; i < progress[item].Y; i++)
+                {
+                    allValues.Add(progress[item].X);
+                }
+            }
+            return allValues.Average();
+        }
+
+        public TimeSpan GetTimeToNextCheckpoint()
+        {
+            var configuration = GetActiveConfiguration();
+            var result = GetActiveResult();
+            var lastCheckpoint = (result.LastCheckpoint ?? result.SeasonStart).Value;
+            var nextCheckpoint = lastCheckpoint.AddHours(configuration.HoursBetweenCheckpoints);
+            return nextCheckpoint - DateTime.Now;
+        }
+
+        public TimeSpan GetTimeToNextSeason()
+        {
+            var configuration = GetActiveConfiguration();
+            var result = GetActiveResult();
+            var seasonStart = result.SeasonStart.Value;
+            var nextSeason = seasonStart.AddHours(configuration.HoursBetweenCheckpoints * configuration.TotalCheckpoints);
+            return nextSeason - DateTime.Now;
+        }
+
+        public SeasonMetaCategory GetCategoryById(string id)
+        {
+            return Categories.FirstOrDefault(x => x.Id == id);
+        }
 
         private MyObjectBuilderType[] GetPhysicalItemFilter()
         {
@@ -120,7 +195,7 @@ namespace SEDiscordBridge.Patches
                         Id = $"SEASON_META_CATEGORY_{gType.ToString().ToUpper()}",
                         Name = gType.ToString(),
                         Type = gType,
-                        Items = group.Select(x => new SeasonMetaCategoryValidItem() { Id = x.Id, Weight = 1 }).ToList()
+                        Items = group.Select(x => new SeasonMetaCategoryValidItem() { Id = new StorageDefinitionId(x.Id), Weight = 1 }).ToList()
                     };
                     Categories.Add(category);
                 }

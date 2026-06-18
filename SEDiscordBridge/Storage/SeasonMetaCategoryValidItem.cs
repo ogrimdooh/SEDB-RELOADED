@@ -7,7 +7,7 @@ namespace SEDiscordBridge.Patches
     {
 
         [XmlElement]
-        public SerializableDefinitionId Id { get; set; }
+        public StorageDefinitionId Id { get; set; }
 
         [XmlElement]
         public float Weight { get; set; }
