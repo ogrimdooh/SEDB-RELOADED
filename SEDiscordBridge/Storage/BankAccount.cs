@@ -18,6 +18,24 @@ namespace SEDiscordBridge.Patches
         [XmlArray("Transactions"), XmlArrayItem("Transaction", typeof(BankTransaction))]
         public List<BankTransaction> Transactions { get; set; } = new List<BankTransaction>();
 
+        public bool DoFee(ulong value, string name, string description)
+        {
+            if (Balance >= value)
+            {
+                Transactions.Add(new BankTransaction()
+                {
+                    OperationDate = System.DateTime.Now,
+                    OperationType = BankTransactionType.Fee,
+                    Value = value,
+                    Name = name,
+                    Description = description
+                });
+                Balance -= value;
+                return true;
+            }
+            return false;
+        }
+
         public bool DoDeposit(ulong value, ulong referenceValue)
         {
             Transactions.Add(new BankTransaction() { 

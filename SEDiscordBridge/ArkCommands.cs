@@ -136,7 +136,7 @@ namespace SEDiscordBridge
                 SEDBStorage.Instance.Registry.DoRegistryUser(userId, Context.Player.SteamUserId);
                 SEDBStorage.Instance.Registry.DoUseToken(token);
 
-                Plugin.AlertRegistryIsCompleted();
+                Plugin.AlertRegistryIsCompleted(userId);
 
                 MyAPIGateway.Parallel.Start(() => {
                     Plugin.CompleteRegistryToUser(userId).Wait();

@@ -301,6 +301,7 @@
     <Compile Include="Storage\Base\BaseStorage.cs" />
     <Compile Include="Storage\PlayerStorage.cs" />
     <Compile Include="Storage\PlayerStorageValue.cs" />
+    <Compile Include="Storage\ProfessionStorage.cs" />
     <Compile Include="Storage\RegistredUserInfo.cs" />
     <Compile Include="Storage\RegistryStorage.cs" />
     <Compile Include="Storage\RegistryTokenData.cs" />

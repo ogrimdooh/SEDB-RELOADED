@@ -168,9 +168,9 @@ namespace SEDiscordBridge
 
             var player = Players[playerId];
 
-            var didRegisterLocation = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, SEDBStorage.KEY_DID_REGISTERLOCATION);
-            var lastLocationIsGravity = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, SEDBStorage.KEY_LASTLOCATION_ISGRAVITY);
-            var lastLocationEntityId = SEDBStorage.Instance.GetPlayerValue<long>(playerId.SteamId, SEDBStorage.KEY_LASTLOCATION_ENTITYID);
+            var didRegisterLocation = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION);
+            var lastLocationIsGravity = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY);
+            var lastLocationEntityId = SEDBStorage.Instance.GetPlayerValue<long>(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID);
 
             var playerPos = player.GetPosition();
 
@@ -190,7 +190,7 @@ namespace SEDiscordBridge
                     if (planet != null && lastLocationEntityId != planet.EntityId)
                     {
 
-                        var KEY_VISITED = string.Format(SEDBStorage.KEY_LOCATION_VISITED, planet.EntityId);
+                        var KEY_VISITED = string.Format(PlayerStorage.KEY_LOCATION_VISITED, planet.EntityId);
                         var didVisitLocation = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, KEY_VISITED);
 
                         IMyCubeBlock cockpit = null;
@@ -240,10 +240,10 @@ namespace SEDiscordBridge
 
                         }
 
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, SEDBStorage.KEY_DID_REGISTERLOCATION, true);
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, SEDBStorage.KEY_LASTLOCATION_ISGRAVITY, true);
+                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION, true);
+                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY, true);
                         SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, KEY_VISITED, true);
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, SEDBStorage.KEY_LASTLOCATION_ENTITYID, planet.EntityId);
+                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID, planet.EntityId);
                         SEDBStorage.Save();
 
                     }
@@ -301,9 +301,9 @@ namespace SEDiscordBridge
 
                     }
 
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, SEDBStorage.KEY_DID_REGISTERLOCATION, true);
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, SEDBStorage.KEY_LASTLOCATION_ISGRAVITY, false);
-                    SEDBStorage.Instance.SetPlayerValue<long>(player.Id.SteamId, SEDBStorage.KEY_LASTLOCATION_ENTITYID, 0);
+                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION, true);
+                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY, false);
+                    SEDBStorage.Instance.SetPlayerValue<long>(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID, 0);
                     SEDBStorage.Save();
 
                 }
@@ -311,9 +311,9 @@ namespace SEDiscordBridge
                 if (!didRegisterLocation)
                 {
 
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, SEDBStorage.KEY_DID_REGISTERLOCATION, true);
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, SEDBStorage.KEY_LASTLOCATION_ISGRAVITY, false);
-                    SEDBStorage.Instance.SetPlayerValue<long>(player.Id.SteamId, SEDBStorage.KEY_LASTLOCATION_ENTITYID, 0);
+                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION, true);
+                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY, false);
+                    SEDBStorage.Instance.SetPlayerValue<long>(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID, 0);
                     SEDBStorage.Save();
 
                 }
@@ -805,14 +805,14 @@ namespace SEDiscordBridge
                                 var player2 = MySession.Static.Players.GetPlayerById(id2);
                                 if (player2 != null && !string.IsNullOrWhiteSpace(player2.DisplayName))
                                 {
-                                    var didKill = SEDBStorage.Instance.GetPlayerValue<bool>(player2.Id.SteamId, SEDBStorage.KEY_DID_KILL);
+                                    var didKill = SEDBStorage.Instance.GetPlayerValue<bool>(player2.Id.SteamId, PlayerStorage.KEY_DID_KILL);
                                     if (!didKill)
                                     {
                                         SEDiscordBridgePlugin.Static.DDBridge.SendStatusMessage(player2.DisplayName, player2.Id.SteamId, SEDiscordBridgePlugin.Static.Config.FirstKillMessage);
-                                        SEDBStorage.Instance.SetPlayerValue<bool>(player2.Id.SteamId, SEDBStorage.KEY_DID_KILL, true);
+                                        SEDBStorage.Instance.SetPlayerValue<bool>(player2.Id.SteamId, PlayerStorage.KEY_DID_KILL, true);
                                     }
-                                    var killCount = SEDBStorage.Instance.GetPlayerValue<int>(player2.Id.SteamId, SEDBStorage.KEY_KILL_COUNT);
-                                    SEDBStorage.Instance.SetPlayerValue<int>(player2.Id.SteamId, SEDBStorage.KEY_KILL_COUNT, killCount + 1);
+                                    var killCount = SEDBStorage.Instance.GetPlayerValue<int>(player2.Id.SteamId, PlayerStorage.KEY_KILL_COUNT);
+                                    SEDBStorage.Instance.SetPlayerValue<int>(player2.Id.SteamId, PlayerStorage.KEY_KILL_COUNT, killCount + 1);
                                     SEDBStorage.Save();
 
                                     msgToUse = SEDiscordBridgePlugin.Static.Config.MurderMessage;

@@ -2,11 +2,26 @@
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using Newtonsoft.Json;
 
 namespace SEDiscordBridge.Patches
 {
+
     public class PlayerStorage
     {
+
+        public const string KEY_DID_JUMP = "DID_JUMP";
+        public const string KEY_JUMP_COUNT = "JUMP_COUNT";
+
+        public const string KEY_DID_REGISTERLOCATION = "DID_REGISTERLOCATION";
+        public const string KEY_LASTLOCATION_ISGRAVITY = "LASTLOCATION_ISGRAVITY";
+        public const string KEY_LASTLOCATION_ENTITYID = "LASTLOCATION_ENTITYID";
+        public const string KEY_LOCATION_VISITED = "LOCATION_VISITED_{0}";
+
+        public const string KEY_DID_KILL = "DID_KILL";
+        public const string KEY_KILL_COUNT = "KILL_COUNT";
+
+        public const string KEY_PROFESSION = "PROFESSION";
 
         [XmlElement]
         public ulong SteamId { get; set; }

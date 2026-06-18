@@ -34,6 +34,7 @@ namespace SEDiscordBridge
 
         public static DiscordEmoji ThumbsupEmoji { get; private set; }
         public static DiscordEmoji MoneybagEmoji { get; private set; }
+        public static DiscordEmoji ReceiptEmoji { get; private set; }
 
         public static int Cooldown;
         public static decimal Increment;
@@ -110,6 +111,7 @@ namespace SEDiscordBridge
                 Ready = true;
                 ThumbsupEmoji = DiscordEmoji.FromName(Discord, ":thumbsup:");
                 MoneybagEmoji = DiscordEmoji.FromName(Discord, ":moneybag:");
+                ReceiptEmoji = DiscordEmoji.FromName(Discord, ":receipt:");
                 MsgWorker.DoLoad();
                 if (OnReady != null)
                     OnReady.Invoke();
@@ -148,6 +150,25 @@ namespace SEDiscordBridge
                         MyAPIGateway.Parallel.Start(() => {
                             Plugin.SendBalanceToUser(e.User, e.Guild).Wait();
                         });
+                        await e.Message.DeleteReactionAsync(e.Emoji, e.User);
+                        return;
+                    }
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(Plugin.Config.ProfessionChannelId) && SEDBStorage.Instance.Profession.Enabled)
+            {
+                if (e.Channel.Id == ulong.Parse(Plugin.Config.ProfessionChannelId))
+                {
+                    if (SEDBStorage.Instance.Profession.GetAllMessagesIds().Contains(e.Message.Id))
+                    {
+                        Logging.Instance.LogInfo(GetType(), $"Added {e.Emoji} reaction to profession message.");
+                        if (e.Message.Id != SEDBStorage.Instance.Profession.StartMsgId)
+                        {
+                            var profId = SEDBStorage.Instance.Profession.ProfessionsMsgIds.FirstOrDefault(x => x.MsgId == e.Message.Id).ProfessionId;
+                            MyAPIGateway.Parallel.Start(() => {
+                                Plugin.StartProfessionAcquisition(e.User, e.Guild, profId).Wait();
+                            });
+                        }
                         await e.Message.DeleteReactionAsync(e.Emoji, e.User);
                         return;
                     }

@@ -16,17 +16,6 @@ namespace SEDiscordBridge.Patches
         private const string JSON_FILE_NAME = "SEDB.Storage.json";
         private const bool USE_JSON = true;
 
-        public const string KEY_DID_JUMP = "KEY_DID_JUMP";
-        public const string KEY_JUMP_COUNT = "KEY_JUMP_COUNT";
-
-        public const string KEY_DID_REGISTERLOCATION = "KEY_DID_REGISTERLOCATION";
-        public const string KEY_LASTLOCATION_ISGRAVITY = "KEY_LASTLOCATION_ISGRAVITY";
-        public const string KEY_LASTLOCATION_ENTITYID = "KEY_LASTLOCATION_ENTITYID";
-        public const string KEY_LOCATION_VISITED = "KEY_LOCATION_VISITED_{0}";
-
-        public const string KEY_DID_KILL = "KEY_DID_KILL";
-        public const string KEY_KILL_COUNT = "KEY_KILL_COUNT";
-        
         private static SEDBStorage _instance;
         public static SEDBStorage Instance
         {
@@ -68,10 +57,12 @@ namespace SEDiscordBridge.Patches
             }
         }
 
+        [XmlElement]
+        public ProfessionStorage Profession { get; set; } = new ProfessionStorage();
 
         [XmlElement]
         public BankStorage Bank { get; set; } = new BankStorage();
-
+        
         [XmlElement]
         public RegistryStorage Registry { get; set; } = new RegistryStorage();
 

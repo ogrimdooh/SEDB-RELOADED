@@ -55,7 +55,7 @@ namespace SEDiscordBridge.Patches
                                 distance *= -1;
                             }
 
-                            var didJump = SEDBStorage.Instance.GetPlayerValue<bool>(player.Id.SteamId, SEDBStorage.KEY_DID_JUMP);
+                            var didJump = SEDBStorage.Instance.GetPlayerValue<bool>(player.Id.SteamId, PlayerStorage.KEY_DID_JUMP);
 
                             if (Plugin.Config.DisplayOnlyFirstJumpMessage && didJump) return;
 
@@ -64,9 +64,9 @@ namespace SEDiscordBridge.Patches
                             msgToUse = msgToUse.Replace("{d}", distance.ToString("#0.0"));
                             Plugin.DDBridge.SendStatusMessage(player.DisplayName, player.Id.SteamId, msgToUse);
 
-                            SEDBStorage.Instance.SetPlayerValue<bool>(player.Id.SteamId, SEDBStorage.KEY_DID_JUMP, true);
-                            var jumpCount = SEDBStorage.Instance.GetPlayerValue<int>(player.Id.SteamId, SEDBStorage.KEY_JUMP_COUNT);
-                            SEDBStorage.Instance.SetPlayerValue<int>(player.Id.SteamId, SEDBStorage.KEY_JUMP_COUNT, jumpCount + 1);
+                            SEDBStorage.Instance.SetPlayerValue<bool>(player.Id.SteamId, PlayerStorage.KEY_DID_JUMP, true);
+                            var jumpCount = SEDBStorage.Instance.GetPlayerValue<int>(player.Id.SteamId, PlayerStorage.KEY_JUMP_COUNT);
+                            SEDBStorage.Instance.SetPlayerValue<int>(player.Id.SteamId, PlayerStorage.KEY_JUMP_COUNT, jumpCount + 1);
 
                             SEDBStorage.Save();
                         }

@@ -26,6 +26,7 @@ using Torch.API;
 using Torch.API.Managers;
 using Torch.API.Plugins;
 using Torch.API.Session;
+using Torch.API.WebAPI;
 using Torch.Managers;
 using Torch.Managers.ChatManager;
 using Torch.Server;
@@ -567,17 +568,22 @@ Welcome aboard the **The Second Dawn**, explorer.
 Report to your faction, secure your cargo, and prepare for the next jump.
 ";
 
-        private const string REGISTRY_ALERT_REGISTRY_COMPLETED = @":white_check_mark: Registry confirmed. New explorer added to the Second Dawn Crew.";
+        private const string REGISTRY_ALERT_REGISTRY_COMPLETED = @":white_check_mark: D.A.W.N. Registry Update
 
-        public void AlertRegistryIsCompleted()
+Explorer **{0}** has been officially added to the Second Dawn Crew.
+
+The Ark recognizes their signal. The journey continues with one more soul aboard.";
+
+        public void AlertRegistryIsCompleted(ulong userId)
         {
             if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId) && SEDBStorage.Instance.Registry.Enabled)
             {
+                var user = DiscordBridge.Discord.GetUserAsync(userId).Result;
                 var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
-                if (channel != null)
+                if (channel != null && user != null)
                 {
                     Log.Info("Sending new start message to the channel...");
-                    MsgWorker.SendToDiscord(channel, REGISTRY_ALERT_REGISTRY_COMPLETED, true);
+                    MsgWorker.SendToDiscord(channel, string.Format(REGISTRY_ALERT_REGISTRY_COMPLETED, user.Username), true);
                 }
             }
         }
@@ -663,6 +669,7 @@ Report to your faction, secure your cargo, and prepare for the next jump.
                         MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
                         {
                             SEDBStorage.Instance.Registry.StartMsgId = dMsg.Id;
+                            dMsg.CreateReactionAsync(DiscordBridge.ThumbsupEmoji).Wait();
                         });
                     }
                     else
@@ -911,6 +918,7 @@ Your account is active, but no deposits, withdrawals, fees, or Ark financial ope
                         MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
                         {
                             SEDBStorage.Instance.Bank.StartMsgId = dMsg.Id;
+                            dMsg.CreateReactionAsync(DiscordBridge.MoneybagEmoji).Wait();
                         });
                     }
                     else
@@ -931,10 +939,345 @@ Your account is active, but no deposits, withdrawals, fees, or Ark financial ope
             }
         }
 
+        private const string PROFESSION_START_MESSAGE = @":identification_card: **THE SECOND DAWN — PROFESSION REQUISITION TERMINAL**
+
+This terminal is maintained by **D.A.W.N. — Distributed Ark Watch Network**.
+
+All registered members of the **Second Dawn Crew** may request an official Ark profession assignment. Professions represent your operational role within the Ark Initiative and provide real field modifiers while active in the current jump cycle.
+
+Your first profession assignment is **free**.
+
+Changing your profession after one has already been assigned requires administrative reassignment, training record updates, and Ark system recalibration. Profession reassignment costs:
+
+`{0} DMK`
+
+To choose or change your profession, react to the specific profession transmission below.
+
+D.A.W.N. will process your request, update your Ark personnel record, apply the corresponding field modifiers, and publish the reassignment notice through the Ark alert network.
+
+Choose carefully. Your profession defines how The Second Dawn recognizes your role among the stars.
+
+---";
+
+        private const string PROFESSION_ENTRY_MESSAGE = @"{0} **{1}**
+
+{2}
+
+**Field Modifiers:**
+
+{3}
+React to this message to request assignment as a **{4}**.
+
+---";
+
+        private const string PROFESSION_ASSIGNMENT_DM_MESSAGE = @":identification_card: **D.A.W.N. — PROFESSION ASSIGNMENT CONFIRMED**
+
+Your first Ark profession assignment has been processed successfully.
+
+**Assigned Profession:** `{0}`
+**Assignment Cost:** `Free`
+**Current Balance:** `{1} DMK`
+
+Your personnel record has been updated inside the **Second Dawn Crew Registry**. The corresponding field modifiers are now active and will remain assigned to your profile until a new profession reassignment is requested.
+
+**Active Field Modifiers:**
+
+{2}
+
+Welcome to your new operational role, explorer.
+
+D.A.W.N. has published the assignment notice through the Ark alert network.";
+
+        private const string PROFESSION_REASSIGNMENT_DM_MESSAGE = @":arrows_counterclockwise: **D.A.W.N. — PROFESSION REASSIGNMENT CONFIRMED**
+
+Your Ark profession reassignment has been processed successfully.
+
+**Previous Profession:** `{0}`
+**New Profession:** `{1}`
+**Reassignment Fee:** `{2} DMK`
+**Previous Balance:** `{3} DMK`
+**Current Balance:** `{4} DMK`
+
+Your personnel record has been recalibrated inside the **Second Dawn Crew Registry**. Previous field modifiers have been revoked, and your new operational modifiers are now active.
+
+**Active Field Modifiers:**
+
+{5}
+
+D.A.W.N. has published the reassignment notice through the Ark alert network.";
+
+        private const string PROFESSION_REASSIGNMENT_DENIED_DM_MESSAGE = @":warning: **D.A.W.N. — PROFESSION REASSIGNMENT DENIED**
+
+Your profession reassignment request could not be completed.
+
+**Requested Profession:** `{0}`
+**Required Fee:** `{1} DMK`
+**Current Balance:** `{2} DMK`
+**Missing Balance:** `{3} DMK`
+
+Your current profession remains unchanged.
+
+To complete this reassignment, deposit funds into your Ark Bank account and try again.
+
+Use the following command inside the **Space Engineers in-game chat**:
+
+`!ark bank deposit <AMOUNT>`
+
+D.A.W.N. will continue to preserve your current personnel assignment until a valid reassignment request is processed.";
+
+        private const string PROFESSION_REASSIGNMENT_NOTNEEDED_DM_MESSAGE = @":information_source: **D.A.W.N. — ASSIGNMENT ALREADY ACTIVE**
+
+Your personnel record is already assigned as `{0}`.
+
+No changes were made and no Dawn Marks were charged.";
+
+        private const string PROFESSION_ALERT_MESSAGE = @":identification_card: D.A.W.N. Registry Update
+
+Explorer **{0}** has joined the **{1} Division**.
+
+The Second Dawn recognizes their new operational role.";
+
+        public void AlertChangeProffesionIsCompleted(string userName, string profName)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId) && SEDBStorage.Instance.Registry.Enabled)
+            {
+                var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                if (channel != null)
+                {
+                    Log.Info("Sending prof changed to the channel...");
+                    MsgWorker.SendToDiscord(channel, string.Format(PROFESSION_ALERT_MESSAGE, userName, profName), true);
+                }
+            }
+        }
+
+        public async Task StartProfessionAcquisition(DiscordUser user, DiscordGuild guild, string professionId)
+        {
+            Log.Info($"Start profession acquisition to user {user.Username}");
+            if (SEDBStorage.Instance.Profession.Enabled)
+            {
+                if (SEDBStorage.Instance.Registry.IsUserRegistered(user.Id))
+                {
+                    Log.Info($"User is registred!");
+                    var registry = SEDBStorage.Instance.Registry.GetUserInfo(user.Id);
+
+                    BankAccount acc = null;
+                    if (!SEDBStorage.Instance.Bank.UserHasAccount(user.Id))
+                    {
+                        Log.Info($"User has no acc, starting a new one!");
+                        acc = SEDBStorage.Instance.Bank.CreateBankAccount(user.Id, registry.SteamId);
+                    }
+                    else
+                    {
+                        Log.Info($"Finding the user acc!");
+                        acc = SEDBStorage.Instance.Bank.GetBankAccount(user.Id);
+                    }
+
+                    var curProf = SEDBStorage.Instance.GetPlayerValue<string>(registry.SteamId, PlayerStorage.KEY_PROFESSION);
+                    var hasProf = !string.IsNullOrWhiteSpace(curProf);
+
+                    if (!ProfessionStorage.PROFESSIONS.ContainsKey(professionId))
+                    {
+                        Log.Warn($"Profession {professionId} not found!");
+                        return;
+                    }
+                    var profInfo = ProfessionStorage.PROFESSIONS[professionId];
+                    var buffs = new StringBuilder();
+                    foreach (var bKey in profInfo.Buffs)
+                    {
+                        if (ProfessionStorage.BUFFS.ContainsKey(bKey))
+                        {
+                            buffs.AppendLine(ProfessionStorage.BUFFS[bKey].EffectDescription);
+                        }
+                    }
+
+                    var msgToSend = "";
+                    var doAlert = false;
+                    if (hasProf)
+                    {
+                        if (curProf == professionId)
+                        {
+                            msgToSend = string.Format(PROFESSION_REASSIGNMENT_NOTNEEDED_DM_MESSAGE,
+                                profInfo.Name.ToUpper());
+                        }
+                        else
+                        {
+                            if (acc.Balance < SEDBStorage.Instance.Profession.ChangeCost)
+                            {
+                                var needValue = SEDBStorage.Instance.Profession.ChangeCost - acc.Balance;
+                                msgToSend = string.Format(PROFESSION_REASSIGNMENT_DENIED_DM_MESSAGE,
+                                    profInfo.Name.ToUpper(),
+                                    SEDBStorage.Instance.Profession.ChangeCost.ToString("N2"),
+                                    acc.Balance.ToString("N2"),
+                                    needValue.ToString("N2"));
+                            }
+                            else
+                            {
+                                var curProfInfo = ProfessionStorage.PROFESSIONS[curProf];
+                                var oldBalance = acc.Balance;
+                                if (acc.DoFee(SEDBStorage.Instance.Profession.ChangeCost, "Profession Reassignment Fee", $"Assigned to `{profInfo.Name.ToUpper()}`"))
+                                {
+                                    SEDBStorage.Instance.SetPlayerValue<string>(registry.SteamId, PlayerStorage.KEY_PROFESSION, professionId);
+                                    msgToSend = string.Format(PROFESSION_REASSIGNMENT_DM_MESSAGE,
+                                        curProfInfo.Name.ToUpper(),
+                                        profInfo.Name.ToUpper(),
+                                        SEDBStorage.Instance.Profession.ChangeCost.ToString("N2"),
+                                        oldBalance.ToString("N2"),
+                                        acc.Balance.ToString("N2"),
+                                        buffs.ToString());
+                                    doAlert = true;
+                                }
+                                else
+                                {
+                                    Log.Error($"Failed to change player {user.Username} profession to {profInfo.Name}");
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        SEDBStorage.Instance.SetPlayerValue<string>(registry.SteamId, PlayerStorage.KEY_PROFESSION, professionId);
+                        msgToSend = string.Format(PROFESSION_ASSIGNMENT_DM_MESSAGE,
+                            profInfo.Name.ToUpper(),
+                            acc.Balance.ToString("N2"),
+                            buffs.ToString());
+                        doAlert = true;
+                    }
+
+                    var member = await guild.GetMemberAsync(user.Id);
+                    if (member != null)
+                    {
+                        await member.SendMessageAsync(msgToSend);
+                        Log.Info($"Profession DM send to {user.Username}!");
+                    }
+                    if (doAlert)
+                    {
+                        AlertChangeProffesionIsCompleted(user.Username, profInfo.Name);
+                    }
+                }
+            }
+        }
+
+        private async Task RefreshProfessionChannel()
+        {
+            Log.Info("Refreshing Profession Channel...");
+            if (!string.IsNullOrWhiteSpace(Config.ProfessionChannelId) && SEDBStorage.Instance.Bank.Enabled)
+            {
+                Log.Info("Profession is enabled, updating channel...");
+                var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.ProfessionChannelId)).Result;
+                if (channel != null)
+                {
+                    Log.Info("Profession channel found, updating messages...");
+                    // Limpa mensagens antigas
+                    var needNewMessages = false;
+                    var messages = await channel.GetMessagesAsync(100);
+                    if (messages.Any())
+                    {
+                        Log.Info($"Found {messages.Count} messages in the channel, checking if they match expected count and IDs...");
+                        // Calcula o total de mensagens que deveriam estar no canal (mensagem geral + mensagens de categoria)
+                        var expectedMessageCount = 1 + ProfessionStorage.PROFESSIONS.Count; // 1 para a mensagem geral + QTD de Profissões
+                        // Verifica se todas as mensagens com ids salvos existem, caso contrário, limpa o canal para evitar mensagens desatualizadas
+                        var ids = SEDBStorage.Instance.Profession.GetAllMessagesIds();
+                        var msgsIds = messages.Select(m => m.Id).ToHashSet();
+                        Log.Info($"Expected message count: {expectedMessageCount}, actual message count: {messages.Count}, expected IDs: {string.Join(", ", ids)}, actual IDs: {string.Join(", ", msgsIds)}");
+                        if (expectedMessageCount != messages.Count ||
+                            expectedMessageCount != ids.Count ||
+                            !ids.All(id => msgsIds.Any(m => m != 0 && m == id)))
+                        {
+                            Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
+                            await channel.DeleteMessagesAsync(messages);
+                            needNewMessages = true;
+                        }
+                        else
+                        {
+                            Log.Info("All expected messages are present, will update existing messages...");
+                        }
+                    }
+                    else
+                    {
+                        needNewMessages = true;
+                    }
+
+                    // Envia nova mensagem com os dados atualizados
+                    var startMsg = string.Format(PROFESSION_START_MESSAGE.Replace("/n", "\n"), SEDBStorage.Instance.Profession.ChangeCost.ToString("N2"));
+                    if (needNewMessages)
+                    {
+                        Log.Info("Sending new start message to the channel...");
+                        MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
+                        {
+                            SEDBStorage.Instance.Profession.StartMsgId = dMsg.Id;
+                        });
+                    }
+                    else
+                    {
+                        Log.Info("Updating existing start message...");
+                        // Atualiza a mensagem geral
+                        var generalMsgId = SEDBStorage.Instance.Bank.StartMsgId;
+                        var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
+                        if (generalMsg != null && generalMsg.Content.CompareTo(startMsg) != 0)
+                        {
+                            await generalMsg.ModifyAsync(startMsg);
+                        }
+                        await generalMsg.DeleteAllReactionsAsync();
+                    }
+
+                    foreach (var key in ProfessionStorage.PROFESSIONS.Keys)
+                    {
+                        var profInfo = ProfessionStorage.PROFESSIONS[key];
+
+                        var buffs = new StringBuilder();
+                        foreach (var bKey in profInfo.Buffs)
+                        {
+                            if (ProfessionStorage.BUFFS.ContainsKey(bKey))
+                            {
+                                buffs.AppendLine(ProfessionStorage.BUFFS[bKey].EffectDescription);
+                            }
+                        }
+
+                        var profissionMessage = string.Format(PROFESSION_ENTRY_MESSAGE,
+                            profInfo.Icon,
+                            profInfo.Name.ToUpper(),
+                            profInfo.Description,
+                            buffs.ToString(),
+                            profInfo.Name);
+                        if (needNewMessages)
+                        {
+                            Log.Info($"Sending new message for profession {profInfo.Name} to the channel...");
+                            MsgWorker.SendToDiscord(channel, profissionMessage, true, (dMsg) => {
+                                SEDBStorage.Instance.Profession.ProfessionsMsgIds.Add(new ProfessionChatEntryId()
+                                {
+                                    ProfessionId = key,
+                                    MsgId = dMsg.Id
+                                });
+                                dMsg.CreateReactionAsync(DiscordBridge.ReceiptEmoji).Wait();
+                            });
+                        }
+                        else
+                        {
+                            Log.Info($"Updating existing message for category {profInfo.Name}...");
+                            var profMsgId = SEDBStorage.Instance.Profession.ProfessionsMsgIds.FirstOrDefault(m => m.ProfessionId == key)?.MsgId;
+                            if (profMsgId != null)
+                            {
+                                var profMsg = messages.FirstOrDefault(m => m.Id == profMsgId);
+                                if (profMsg != null && profMsg.Content.CompareTo(profissionMessage) != 0)
+                                {
+                                    await profMsg.ModifyAsync(profissionMessage);
+                                }
+                                await profMsg.DeleteAllReactionsAsync();
+                                await profMsg.CreateReactionAsync(DiscordBridge.ReceiptEmoji);
+                            }
+                        }
+
+                    }
+                }
+
+            }
+        }
+
         private bool _discordChannelsCanBeRefreshing = false;
         private bool _seasonMetaNeedRefreshing = false;
         private bool _registryNeedRefreshing = false;
         private bool _bankNeedRefreshing = false;
+        private bool _professionNeedRefreshing = false;
 
         public void LoadSEDB()
         {
@@ -945,6 +1288,7 @@ Your account is active, but no deposits, withdrawals, fees, or Ark financial ope
             _seasonMetaNeedRefreshing = true;
             _registryNeedRefreshing = true;
             _bankNeedRefreshing = true;
+            _professionNeedRefreshing = true;
 
             if (Config.LoadRanks)
                 ReflectEssentials();
@@ -1001,6 +1345,13 @@ Your account is active, but no deposits, withdrawals, fees, or Ark financial ope
                             RefreshBankChannel().Wait();
                         });
                     }
+                    if (_professionNeedRefreshing)
+                    {
+                        _professionNeedRefreshing = false;
+                        MyAPIGateway.Parallel.Start(() => {
+                            RefreshProfessionChannel().Wait();
+                        });
+                    }
                 }
 
                 if (_chatmanager == null)
@@ -1021,9 +1372,9 @@ Your account is active, but no deposits, withdrawals, fees, or Ark financial ope
 
         private void DiscordBridge_OnReady()
         {
-            if (_seasonMetaNeedRefreshing)
+            if (_discordChannelsCanBeRefreshing)
             {
-                if (_discordChannelsCanBeRefreshing)
+                if (_seasonMetaNeedRefreshing)
                 {
                     _seasonMetaNeedRefreshing = false;
                     MyAPIGateway.Parallel.Start(() => {
@@ -1042,6 +1393,13 @@ Your account is active, but no deposits, withdrawals, fees, or Ark financial ope
                     _bankNeedRefreshing = false;
                     MyAPIGateway.Parallel.Start(() => {
                         RefreshBankChannel().Wait();
+                    });
+                }
+                if (_professionNeedRefreshing)
+                {
+                    _professionNeedRefreshing = false;
+                    MyAPIGateway.Parallel.Start(() => {
+                        RefreshProfessionChannel().Wait();
                     });
                 }
             }

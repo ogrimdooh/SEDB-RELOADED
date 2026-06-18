@@ -201,6 +201,10 @@ namespace SEDiscordBridge
         private string _bankChannelID = "";
         public string BankChannelId { get => _bankChannelID; set => SetValue(ref _bankChannelID, value); }
 
+        [XmlIgnore]
+        private string _professionChannelId = "";
+        public string ProfessionChannelId { get => _professionChannelId; set => SetValue(ref _professionChannelId, value); }
+        
         /* Server */
 
         [XmlIgnore]
