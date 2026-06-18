@@ -1,4 +1,6 @@
 using NLog;
+using Sandbox.Game.GameSystems.BankingAndCurrency;
+using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Patches;
 using Torch.Commands;
@@ -7,11 +9,104 @@ using VRage.Game.ModAPI;
 
 namespace SEDiscordBridge
 {
+
     [Category("ark")]
     public class ArkCommands : CommandModule
     {
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         public SEDiscordBridgePlugin Plugin => (SEDiscordBridgePlugin)Context.Plugin;
+
+        [Command("bank", "Manage the ark bank account (valid operatios: deposit, withdraw)")]
+        [Permission(MyPromoteLevel.None)]
+        public void Bank(string operation, ulong value = 0)
+        {
+            if (string.IsNullOrWhiteSpace(operation))
+            {
+                Log.Warn($"Bank command was call with null operation parameter!");
+                return;
+            }
+            operation = operation.ToLower().Trim();
+
+            if (Context.Player.SteamUserId == 0)
+            {
+                Log.Warn($"Bank command was call by a user with no SteamUserId!");
+                return;
+            }
+
+            if (!SEDBStorage.Instance.Registry.FindUserBySteamId(Context.Player.SteamUserId, out ulong userId))
+            {
+                Log.Warn($"Bank command was call by a not registred user!");
+                return;
+            }
+
+            if (value < SEDBStorage.Instance.Bank.MinOperationValue)
+            {
+                Log.Warn($"Bank command was call with value less than minimal!");
+                return;
+            }
+
+            var acc = SEDBStorage.Instance.Bank.GetBankAccount(userId);
+
+            if (MyBankingSystem.Static == null)
+            {
+                Log.Warn($"MyBankingSystem is null!");
+                return;
+            }
+
+            var tv = MyBankingSystem.GetBalance(Context.Player.IdentityId);
+            var balance = (ulong)(tv >= 0 ? tv : 0);
+
+            switch (operation)
+            {
+                case "deposit":
+                    if (balance < value)
+                    {
+                        Log.Warn($"Not sufficient founds to Deposit!");
+                        return;
+                    }
+                    var finalDValue = (ulong)(value * SEDBStorage.Instance.Bank.DepositFactor);
+                    if (finalDValue <= 0)
+                    {
+                        Log.Warn($"Final value got below 0 on Deposit action!");
+                        return;
+                    }
+                    if (acc.DoDeposit(finalDValue, value))
+                    {
+                        MyBankingSystem.ChangeBalance(Context.Player.IdentityId, -(long)value);
+                    }
+                    else
+                    {
+                        Log.Warn($"Not abble to do Deposit action!");
+                        return;
+                    }
+                    break;
+                case "withdraw":
+                    if (acc.Balance < value)
+                    {
+                        Log.Warn($"Not sufficient founds to Withdraw!");
+                        return;
+                    }
+                    var finalWValue = (ulong)(value * SEDBStorage.Instance.Bank.WithdrawFactor);
+                    if (finalWValue <= 0)
+                    {
+                        Log.Warn($"Final value got below 0 on Withdraw action!");
+                        return;
+                    }
+                    if (acc.DoWithdraw(value, finalWValue))
+                    {
+                        MyBankingSystem.ChangeBalance(Context.Player.IdentityId, (long)finalWValue);
+                    }
+                    else
+                    {
+                        Log.Warn($"Not abble to do Withdraw action!");
+                        return;
+                    }
+                    break;
+                default:
+                    Log.Warn($"Bank command was call with a invalid operation={operation}!");
+                    break;
+            }
+        }
 
         [Command("registry", "Registry player on ark systems")]
         [Permission(MyPromoteLevel.None)]

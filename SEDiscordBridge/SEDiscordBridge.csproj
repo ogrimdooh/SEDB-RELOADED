@@ -294,6 +294,10 @@
     <Compile Include="DiscordBridge.cs" />
     <Compile Include="SEDBPatch.cs" />
     <Compile Include="SEDiscordBridgePlugin.cs" />
+    <Compile Include="Storage\BankAccount.cs" />
+    <Compile Include="Storage\BankStorage.cs" />
+    <Compile Include="Storage\BankTransaction.cs" />
+    <Compile Include="Storage\BankTransactionType.cs" />
     <Compile Include="Storage\Base\BaseStorage.cs" />
     <Compile Include="Storage\PlayerStorage.cs" />
     <Compile Include="Storage\PlayerStorageValue.cs" />

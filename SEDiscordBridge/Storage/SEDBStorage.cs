@@ -68,6 +68,10 @@ namespace SEDiscordBridge.Patches
             }
         }
 
+
+        [XmlElement]
+        public BankStorage Bank { get; set; } = new BankStorage();
+
         [XmlElement]
         public RegistryStorage Registry { get; set; } = new RegistryStorage();
 

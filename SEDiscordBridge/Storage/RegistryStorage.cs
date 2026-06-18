@@ -35,6 +35,23 @@ namespace SEDiscordBridge.Patches
             return Users.Any(x => x.UserId == userId);
         }
 
+        public bool FindUserBySteamId(ulong steamId, out ulong userId)
+        {
+            var u = Users.FirstOrDefault(x => x.SteamId == steamId);
+            if (u != null)
+            {
+                userId = u.UserId;
+                return true;
+            }
+            userId = 0;
+            return false;
+        }
+
+        public RegistredUserInfo GetUserInfo(ulong userId)
+        {
+            return Users.FirstOrDefault(x => x.UserId == userId);
+        }
+
         public bool UserHasValidToken(ulong userId)
         {
             return Tokens.Any(x => x.UserId == userId && !x.Used && x.ExpireAt > DateTime.Now);

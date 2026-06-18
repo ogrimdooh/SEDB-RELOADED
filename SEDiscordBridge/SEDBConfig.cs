@@ -197,6 +197,10 @@ namespace SEDiscordBridge
         private string _seasonMetaChannelID = "";
         public string SeasonMetaChannelID { get => _seasonMetaChannelID; set => SetValue(ref _seasonMetaChannelID, value); }
 
+        [XmlIgnore]
+        private string _bankChannelID = "";
+        public string BankChannelId { get => _bankChannelID; set => SetValue(ref _bankChannelID, value); }
+
         /* Server */
 
         [XmlIgnore]

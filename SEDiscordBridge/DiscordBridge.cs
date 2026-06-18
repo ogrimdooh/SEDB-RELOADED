@@ -1,5 +1,6 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using EmptyKeys.UserInterface.Generated.DataTemplatesContracts_Bindings;
 using Sandbox.Engine.Utils;
 using Sandbox.Game;
 using Sandbox.Game.Multiplayer;
@@ -30,6 +31,9 @@ namespace SEDiscordBridge
         public static bool Ready { get; set; } = false;
         public static event Action OnReady;
         public static DiscordClient Discord { get; set; }
+
+        public static DiscordEmoji ThumbsupEmoji { get; private set; }
+        public static DiscordEmoji MoneybagEmoji { get; private set; }
 
         public static int Cooldown;
         public static decimal Increment;
@@ -104,6 +108,8 @@ namespace SEDiscordBridge
             Discord.Ready += async (c, e) =>
             {
                 Ready = true;
+                ThumbsupEmoji = DiscordEmoji.FromName(Discord, ":thumbsup:");
+                MoneybagEmoji = DiscordEmoji.FromName(Discord, ":moneybag:");
                 MsgWorker.DoLoad();
                 if (OnReady != null)
                     OnReady.Invoke();
@@ -113,8 +119,10 @@ namespace SEDiscordBridge
             return Task.CompletedTask;
         }
 
-        private Task Discord_MessageReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
+        private async Task Discord_MessageReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
         {
+            if (e.User.IsBot)
+                return;
             if (!string.IsNullOrWhiteSpace(Plugin.Config.RegistryChannelId) && SEDBStorage.Instance.Registry.Enabled)
             {
                 if (e.Channel.Id == ulong.Parse(Plugin.Config.RegistryChannelId))
@@ -125,10 +133,26 @@ namespace SEDiscordBridge
                         MyAPIGateway.Parallel.Start(() => {
                             Plugin.StartRegistryToUser(e.User, e.Guild).Wait();
                         });
+                        await e.Message.DeleteReactionAsync(e.Emoji, e.User);
+                        return;
                     }
                 }
             }
-            return Task.CompletedTask;
+            if (!string.IsNullOrWhiteSpace(Plugin.Config.BankChannelId) && SEDBStorage.Instance.Bank.Enabled)
+            {
+                if (e.Channel.Id == ulong.Parse(Plugin.Config.BankChannelId))
+                {
+                    if (e.Message.Id == SEDBStorage.Instance.Bank.StartMsgId)
+                    {
+                        Logging.Instance.LogInfo(GetType(), $"Added {e.Emoji} reaction to bank start message.");
+                        MyAPIGateway.Parallel.Start(() => {
+                            Plugin.SendBalanceToUser(e.User, e.Guild).Wait();
+                        });
+                        await e.Message.DeleteReactionAsync(e.Emoji, e.User);
+                        return;
+                    }
+                }
+            }
         }
 
         public void SendStatus(string status, UserStatus userStatus)
