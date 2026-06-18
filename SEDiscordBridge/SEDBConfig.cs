@@ -182,6 +182,10 @@ namespace SEDiscordBridge
         /* New Channels */
 
         [XmlIgnore]
+        private string _serverId = "";
+        public string ServerId { get => _serverId; set => SetValue(ref _serverId, value); }
+
+        [XmlIgnore]
         private string _alertsChannelID = "";
         public string AlertsChannelId { get => _alertsChannelID; set => SetValue(ref _alertsChannelID, value); }
 

@@ -549,7 +549,7 @@ Explorer registration request received.
 Thank you for joining the **Second Dawn Ark Initiative**. Your presence has been logged, but your identity must be verified before Ark access credentials can be issued.
 To complete the link between your Discord profile and your in-game explorer record, enter the following command inside the **Space Engineers in-game chat**:
 
-`!ark-registry:{0}`
+`!ark registry {0}`
 
 This authorization key is personal and temporary (will expire in {1} minutes). Do not share it with other explorers.
 Once the command is received from inside the server, D.A.W.N. will finalize your registration.
@@ -569,17 +569,47 @@ Report to your faction, secure your cargo, and prepare for the next jump.
 
         private const string REGISTRY_ALERT_REGISTRY_COMPLETED = @":white_check_mark: Registry confirmed. New explorer added to the Second Dawn Crew.";
 
-        public async Task StartRegistryToUser(DiscordUser user)
+        public void AlertRegistryIsCompleted()
         {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId) && SEDBStorage.Instance.Registry.Enabled)
+            {
+                var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                if (channel != null)
+                {
+                    Log.Info("Sending new start message to the channel...");
+                    MsgWorker.SendToDiscord(channel, REGISTRY_ALERT_REGISTRY_COMPLETED, true);
+                }
+            }
+        }
+
+        public async Task CompleteRegistryToUser(ulong userId)
+        {
+            if (SEDBStorage.Instance.Registry.Enabled)
+            {
+                await DDBridge.SendDmMessage(userId, REGISTRY_DM_REGISTRY_COMPLETED);
+            }
+        }
+
+        public async Task StartRegistryToUser(DiscordUser user, DiscordGuild guild)
+        {
+            Log.Info($"Start the registry to user {user.Username}");
             if (SEDBStorage.Instance.Registry.Enabled)
             {
                 if (!SEDBStorage.Instance.Registry.IsUserRegistered(user.Id))
                 {
+                    Log.Info($"User is not registred!");
                     if (!SEDBStorage.Instance.Registry.UserHasValidToken(user.Id))
                     {
+                        Log.Info($"User has no active token!");
                         var token = SEDBStorage.Instance.Registry.CreateToken(user.Id);
+                        Log.Info($"Token {token} created to user {user.Username}!");
                         var msgToSend = string.Format(REGISTRY_DM_CODE_SEND, token, SEDBStorage.Instance.Registry.TokenValidInMinutes);
-                        DDBridge.Dis
+                        var member = await guild.GetMemberAsync(user.Id);
+                        if (member != null)
+                        {
+                            await member.SendMessageAsync(msgToSend);
+                            Log.Info($"Token send to {user.Username}!");
+                        }
                     }
                 }
             }
@@ -591,7 +621,6 @@ Report to your faction, secure your cargo, and prepare for the next jump.
             if (!string.IsNullOrWhiteSpace(Config.RegistryChannelId) && SEDBStorage.Instance.Registry.Enabled)
             {
                 Log.Info("Registry is enabled, updating channel...");
-
                 var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.RegistryChannelId)).Result;
                 if (channel != null)
                 {
@@ -648,6 +677,8 @@ Report to your faction, secure your cargo, and prepare for the next jump.
                         }
                     }
                 }
+                Log.Info("Cleaning old tokens!");
+                SEDBStorage.Instance.Registry.CleanOldTokens();
             }
         }
 

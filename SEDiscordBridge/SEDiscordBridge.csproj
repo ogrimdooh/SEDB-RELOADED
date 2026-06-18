@@ -275,6 +275,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArkCommands.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="Extensions\IMyCharacterExtensions.cs" />
     <Compile Include="Extensions\IMyPlayerExtensions.cs" />
@@ -296,7 +297,9 @@
     <Compile Include="Storage\Base\BaseStorage.cs" />
     <Compile Include="Storage\PlayerStorage.cs" />
     <Compile Include="Storage\PlayerStorageValue.cs" />
+    <Compile Include="Storage\RegistredUserInfo.cs" />
     <Compile Include="Storage\RegistryStorage.cs" />
+    <Compile Include="Storage\RegistryTokenData.cs" />
     <Compile Include="Storage\SeasonMetaCategory.cs" />
     <Compile Include="Storage\SeasonMetaCategoryValidItem.cs" />
     <Compile Include="Storage\SeasonMetaChatEntryId.cs" />

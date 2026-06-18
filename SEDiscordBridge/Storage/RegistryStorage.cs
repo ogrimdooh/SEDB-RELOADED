@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -7,69 +6,6 @@ using System.Xml.Serialization;
 
 namespace SEDiscordBridge.Patches
 {
-
-    public class RegistryTokenData
-    {
-
-        [XmlElement]
-        public string RegistryToken { get; set; }
-
-        [XmlElement]
-        public ulong UserId { get; set; }
-
-        [XmlElement]
-        public bool Used { get; set; }
-
-        [XmlElement]
-        public string ExpireAtValue { get; set; }
-
-        [XmlIgnore]
-        [JsonIgnore]
-        public DateTime? ExpireAt
-        {
-            get
-            {
-                if (DateTime.TryParseExact(ExpireAtValue, SEDBStorage.DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
-                    return result;
-                return null;
-            }
-            set
-            {
-                ExpireAtValue = value?.ToString(SEDBStorage.DATE_FORMAT);
-            }
-        }
-
-    }
-
-    public class RegistredUserInfo
-    {
-
-        [XmlElement]
-        public ulong SteamId { get; set; }
-
-        [XmlElement]
-        public ulong UserId { get; set; }
-
-        [XmlElement]
-        public string RegistryDateValue { get; set; }
-
-        [XmlIgnore]
-        [JsonIgnore]
-        public DateTime? RegistryDate
-        {
-            get
-            {
-                if (DateTime.TryParseExact(RegistryDateValue, SEDBStorage.DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
-                    return result;
-                return null;
-            }
-            set
-            {
-                RegistryDateValue = value?.ToString(SEDBStorage.DATE_FORMAT);
-            }
-        }
-
-    }
 
     public class RegistryStorage
     {
@@ -115,6 +51,47 @@ namespace SEDiscordBridge.Patches
             };
             Tokens.Add(token);
             return token.RegistryToken;
+        }
+
+        public bool IsTokenValid(string token, out ulong userId)
+        {
+            if (Guid.TryParse(token, out Guid tk))
+            {
+                var t = Tokens.FirstOrDefault(x => x.Token == tk && !x.Used && x.ExpireAt > DateTime.Now);
+                if (t != null)
+                {
+                    userId = t.UserId;
+                    return true;
+                }
+            }
+            userId = 0;
+            return false;
+        }
+
+        public void DoUseToken(string token)
+        {
+            if (Guid.TryParse(token, out Guid tk))
+            {
+                var t = Tokens.FirstOrDefault(x => x.Token == tk && !x.Used && x.ExpireAt > DateTime.Now);
+                if (t != null)
+                {
+                    t.Used = true;
+                }
+            }
+        }
+
+        public void DoRegistryUser(ulong userId, ulong steamId)
+        {
+            Users.Add(new RegistredUserInfo() { 
+                UserId = userId,
+                SteamId = steamId,
+                RegistryDate = DateTime.Now
+            });
+        }
+
+        public void CleanOldTokens()
+        {
+            Tokens.RemoveAll(x => x.Used || x.ExpireAt < DateTime.Now);
         }
 
     }

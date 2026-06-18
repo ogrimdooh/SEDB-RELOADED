@@ -1,16 +1,17 @@
+using DSharpPlus.Entities;
 using NLog;
+using Sandbox.Game;
+using Sandbox.Game.World;
+using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using VRage.Game.ModAPI;
-using System.Collections.Generic;
-using Sandbox.Game;
-using Sandbox.Game.World;
-using System.Threading;
-using DSharpPlus.Entities;
 
 namespace SEDiscordBridge
 {
+
     [Category("sedb")]
     public class Commands : CommandModule {
 

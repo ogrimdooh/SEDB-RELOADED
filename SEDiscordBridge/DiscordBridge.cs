@@ -122,8 +122,8 @@ namespace SEDiscordBridge
                     if (e.Message.Id == SEDBStorage.Instance.Registry.StartMsgId)
                     {
                         Logging.Instance.LogInfo(GetType(), $"Added {e.Emoji} reaction to registry start message.");
-                        MyAPIGateway.Parallel.Start(() => { 
-                            Plugin.StartRegistryToUser(e.User).Wait();
+                        MyAPIGateway.Parallel.Start(() => {
+                            Plugin.StartRegistryToUser(e.User, e.Guild).Wait();
                         });
                     }
                 }
@@ -194,13 +194,25 @@ namespace SEDiscordBridge
             }
         }
 
-        public void SendDm(string msg)
+        private async Task<DiscordGuild> GetServerGuild()
+        {
+            if (!string.IsNullOrWhiteSpace(Plugin.Config.ServerId))
+                return await Discord.GetGuildAsync(ulong.Parse(Plugin.Config.ServerId));
+            return null;
+        }
+
+        public async Task SendDmMessage(ulong userUd, string msg)
         {
             try
             {
-                if (Ready)
+                var guild = await GetServerGuild();
+                if (guild != null)
                 {
-
+                    var member = await guild.GetMemberAsync(userUd);
+                    if (member != null)
+                    {
+                        await member.SendMessageAsync(msg);
+                    }
                 }
             }
             catch (Exception e)
