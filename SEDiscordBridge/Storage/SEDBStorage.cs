@@ -9,6 +9,8 @@ namespace SEDiscordBridge.Patches
     public class SEDBStorage : BaseStorage
     {
 
+        public const string DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
         private const int CURRENT_VERSION = 1;
         private const string FILE_NAME = "SEDB.Storage.xml";
         private const string JSON_FILE_NAME = "SEDB.Storage.json";
@@ -65,6 +67,9 @@ namespace SEDiscordBridge.Patches
                 Logging.Instance.LogError(typeof(BaseStorage), e);
             }
         }
+
+        [XmlElement]
+        public RegistryStorage Registry { get; set; } = new RegistryStorage();
 
         [XmlElement]
         public SeasonMetaStorage SeasonMeta { get; set; } = new SeasonMetaStorage();

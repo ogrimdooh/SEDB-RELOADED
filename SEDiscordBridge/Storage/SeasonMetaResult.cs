@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System;
 using System.ComponentModel;
+using Newtonsoft.Json;
 
 namespace SEDiscordBridge.Patches
 {
     public class SeasonMetaResult
     {
-
-        private const string DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
         [XmlElement]
         public string Id { get; set; }
@@ -20,17 +19,18 @@ namespace SEDiscordBridge.Patches
         public string LastCheckpointValue { get; set; }
 
         [XmlIgnore]
+        [JsonIgnore]
         public DateTime? LastCheckpoint 
         { 
             get
             {
-                if (DateTime.TryParseExact(LastCheckpointValue, DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
+                if (DateTime.TryParseExact(LastCheckpointValue, SEDBStorage.DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
                     return result;
                 return null;
             }
             set
             {
-                LastCheckpointValue = value?.ToString(DATE_FORMAT);
+                LastCheckpointValue = value?.ToString(SEDBStorage.DATE_FORMAT);
             }
         }
 
@@ -38,17 +38,18 @@ namespace SEDiscordBridge.Patches
         public string SeasonStartValue { get; set; }
 
         [XmlIgnore]
+        [JsonIgnore]
         public DateTime? SeasonStart
         {
             get
             {
-                if (DateTime.TryParseExact(SeasonStartValue, DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
+                if (DateTime.TryParseExact(SeasonStartValue, SEDBStorage.DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
                     return result;
                 return null;
             }
             set
             {
-                SeasonStartValue = value?.ToString(DATE_FORMAT);
+                SeasonStartValue = value?.ToString(SEDBStorage.DATE_FORMAT);
             }
         }
 

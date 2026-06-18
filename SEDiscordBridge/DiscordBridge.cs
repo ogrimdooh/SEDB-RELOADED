@@ -1,8 +1,11 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using Sandbox.Engine.Utils;
 using Sandbox.Game;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
+using SEDiscordBridge.Patches;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -94,6 +97,7 @@ namespace SEDiscordBridge
             }
 
             Discord.MessageCreated += Discord_MessageCreated;
+            Discord.MessageReactionAdded += Discord_MessageReactionAdded;
             Discord.SocketClosed += Discord_SocketError;
             Discord.Zombied += Discord_Zombied;
 
@@ -106,6 +110,24 @@ namespace SEDiscordBridge
                 await Task.CompletedTask;
             };
 
+            return Task.CompletedTask;
+        }
+
+        private Task Discord_MessageReactionAdded(DiscordClient sender, DSharpPlus.EventArgs.MessageReactionAddEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(Plugin.Config.RegistryChannelId) && SEDBStorage.Instance.Registry.Enabled)
+            {
+                if (e.Channel.Id == ulong.Parse(Plugin.Config.RegistryChannelId))
+                {
+                    if (e.Message.Id == SEDBStorage.Instance.Registry.StartMsgId)
+                    {
+                        Logging.Instance.LogInfo(GetType(), $"Added {e.Emoji} reaction to registry start message.");
+                        MyAPIGateway.Parallel.Start(() => { 
+                            Plugin.StartRegistryToUser(e.User).Wait();
+                        });
+                    }
+                }
+            }
             return Task.CompletedTask;
         }
 
@@ -164,6 +186,21 @@ namespace SEDiscordBridge
                     msg = MentionNameToID(msg, chann);
                     msg = Plugin.Config.SimMessage.Replace("{ts}", TimeZone.CurrentTimeZone.ToLocalTime(DateTime.Now).ToString());
                     MsgWorker.SendToDiscord(chann, msg.Replace("/n", "\n"), true);
+                }
+            }
+            catch (Exception e)
+            {
+                SEDiscordBridgePlugin.Log.Error(e);
+            }
+        }
+
+        public void SendDm(string msg)
+        {
+            try
+            {
+                if (Ready)
+                {
+
                 }
             }
             catch (Exception e)

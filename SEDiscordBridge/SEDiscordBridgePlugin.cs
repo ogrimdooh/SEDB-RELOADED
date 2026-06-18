@@ -6,6 +6,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Gui;
 using Sandbox.Game.World;
+using Sandbox.ModAPI;
 using SEDiscordBridge.Patches;
 using System;
 using System.Collections.Generic;
@@ -413,11 +414,17 @@ Progress Weight: {2}
                                     Log.Info("All expected messages are present, will update existing messages...");
                                 }
                             }
+                            else
+                            {
+                                needNewMessages = true;
+                            }
+
                             // Envia nova mensagem com os dados atualizados
+                            var startMsg = SEASON_META_START_MESSAGE_TEMPLATE.Replace("/n", "\n");
                             if (needNewMessages) 
                             {
                                 Log.Info("Sending new start message to the channel...");
-                                MsgWorker.SendToDiscord(channel, SEASON_META_START_MESSAGE_TEMPLATE.Replace("/n", "\n"), true, (dMsg) =>
+                                MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
                                 {
                                     SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.StartMsgId = dMsg.Id;
                                 });
@@ -428,9 +435,9 @@ Progress Weight: {2}
                                 // Atualiza a mensagem geral
                                 var generalMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.StartMsgId;
                                 var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
-                                if (generalMsg != null)
+                                if (generalMsg != null && generalMsg.Content.CompareTo(startMsg) != 0)
                                 {
-                                    await generalMsg.ModifyAsync(SEASON_META_START_MESSAGE_TEMPLATE.Replace("/n", "\n"));
+                                    await generalMsg.ModifyAsync(startMsg);
                                 }
                             }
                             // Envia mensagem com o progresso geral
@@ -457,7 +464,7 @@ Progress Weight: {2}
                                 Log.Info("Updating existing overall progress message...");
                                 var overallMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.OverAllMsgId;
                                 var overallMsg = messages.FirstOrDefault(m => m.Id == overallMsgId);
-                                if (overallMsg != null)
+                                if (overallMsg != null && overallMsg.Content.CompareTo(overallMessage) != 0)
                                 {
                                     await overallMsg.ModifyAsync(overallMessage);
                                 }
@@ -506,7 +513,7 @@ Progress Weight: {2}
                                         if (categoryMsgId != null)
                                         {
                                             var categoryMsg = messages.FirstOrDefault(m => m.Id == categoryMsgId);
-                                            if (categoryMsg != null)
+                                            if (categoryMsg != null && categoryMsg.Content.CompareTo(categoryMessage) != 0)
                                             {
                                                 await categoryMsg.ModifyAsync(categoryMessage);
                                             }
@@ -524,15 +531,138 @@ Progress Weight: {2}
             }
         }
 
-        private bool _seasonMetaCanBeRefreshing = false;
+        private const string REGISTRY_START_MESSAGE = @":satellite: **THE SECOND DAWN — ARK REGISTRY**
+
+This terminal is maintained by **D.A.W.N. — Distributed Ark Watch Network**.
+All explorers seeking official access to Ark logistics, cargo storage, faction records, jump preparation systems, and seasonal transfer protocols must complete registration.
+
+To begin, just react to this message with any emoji. D.A.W.N. will open a private transmission and guide you through the identity link procedure.
+
+Once confirmed, your Discord identity will be linked to your in-game explorer profile and your Ark access credentials will be issued.
+
+---";
+
+        private const string REGISTRY_DM_CODE_SEND = @":incoming_envelope: **D.A.W.N. PRIVATE TRANSMISSION**
+
+Explorer registration request received.
+
+Thank you for joining the **Second Dawn Ark Initiative**. Your presence has been logged, but your identity must be verified before Ark access credentials can be issued.
+To complete the link between your Discord profile and your in-game explorer record, enter the following command inside the **Space Engineers in-game chat**:
+
+`!ark-registry:{0}`
+
+This authorization key is personal and temporary (will expire in {1} minutes). Do not share it with other explorers.
+Once the command is received from inside the server, D.A.W.N. will finalize your registration.
+";
+
+        private const string REGISTRY_DM_REGISTRY_COMPLETED = @":identification_card: **ARK REGISTRY CONFIRMED**
+
+Identity link complete.
+
+You are now officially registered as a member of the **Second Dawn Crew**.
+Your profile has been connected to the Ark logistics network. From this point forward, your contributions, cargo transfers, faction activity, tribute status, and jump-cycle records may be processed by **D.A.W.N. — Distributed Ark Watch Network**.
+
+Welcome aboard the **The Second Dawn**, explorer.
+
+Report to your faction, secure your cargo, and prepare for the next jump.
+";
+
+        private const string REGISTRY_ALERT_REGISTRY_COMPLETED = @":white_check_mark: Registry confirmed. New explorer added to the Second Dawn Crew.";
+
+        public async Task StartRegistryToUser(DiscordUser user)
+        {
+            if (SEDBStorage.Instance.Registry.Enabled)
+            {
+                if (!SEDBStorage.Instance.Registry.IsUserRegistered(user.Id))
+                {
+                    if (!SEDBStorage.Instance.Registry.UserHasValidToken(user.Id))
+                    {
+                        var token = SEDBStorage.Instance.Registry.CreateToken(user.Id);
+                        var msgToSend = string.Format(REGISTRY_DM_CODE_SEND, token, SEDBStorage.Instance.Registry.TokenValidInMinutes);
+                        DDBridge.Dis
+                    }
+                }
+            }
+        }
+
+        private async Task RefreshRegistryChannel()
+        {
+            Log.Info("Refreshing Season Registry Channel...");
+            if (!string.IsNullOrWhiteSpace(Config.RegistryChannelId) && SEDBStorage.Instance.Registry.Enabled)
+            {
+                Log.Info("Registry is enabled, updating channel...");
+
+                var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.RegistryChannelId)).Result;
+                if (channel != null)
+                {
+                    Log.Info("Registry channel found, updating messages...");
+                    // Limpa mensagens antigas
+                    var needNewMessages = false;
+                    var messages = await channel.GetMessagesAsync(100);
+                    if (messages.Any())
+                    {
+                        Log.Info($"Found {messages.Count} messages in the channel, checking if they match expected count and IDs...");
+                        // Calcula o total de mensagens que deveriam estar no canal (mensagem geral + mensagens de categoria)
+                        var expectedMessageCount = 1; // 1 para a mensagem geral
+                        // Verifica se todas as mensagens com ids salvos existem, caso contrário, limpa o canal para evitar mensagens desatualizadas
+                        var ids = SEDBStorage.Instance.Registry.GetAllMessagesIds();
+                        var msgsIds = messages.Select(m => m.Id).ToHashSet();
+                        Log.Info($"Expected message count: {expectedMessageCount}, actual message count: {messages.Count}, expected IDs: {string.Join(", ", ids)}, actual IDs: {string.Join(", ", msgsIds)}");
+                        if (expectedMessageCount != messages.Count ||
+                            expectedMessageCount != ids.Count ||
+                            !ids.All(id => msgsIds.Any(m => m != 0 && m == id)))
+                        {
+                            Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
+                            await channel.DeleteMessagesAsync(messages);
+                            needNewMessages = true;
+                        }
+                        else
+                        {
+                            Log.Info("All expected messages are present, will update existing messages...");
+                        }
+                    }
+                    else
+                    {
+                        needNewMessages = true;
+                    }
+
+                    // Envia nova mensagem com os dados atualizados
+                    var startMsg = REGISTRY_START_MESSAGE.Replace("/n", "\n");
+                    if (needNewMessages)
+                    {
+                        Log.Info("Sending new start message to the channel...");
+                        MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
+                        {
+                            SEDBStorage.Instance.Registry.StartMsgId = dMsg.Id;
+                        });
+                    }
+                    else
+                    {
+                        Log.Info("Updating existing start message...");
+                        // Atualiza a mensagem geral
+                        var generalMsgId = SEDBStorage.Instance.Registry.StartMsgId;
+                        var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
+                        if (generalMsg != null && generalMsg.Content.CompareTo(startMsg) != 0)
+                        {
+                            await generalMsg.ModifyAsync(startMsg);
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool _discordChannelsCanBeRefreshing = false;
         private bool _seasonMetaNeedRefreshing = false;
+        private bool _registryNeedRefreshing = false;
+
         public void LoadSEDB()
         {
             if (DDBridge == null)
                 DDBridge = new DiscordBridge(this);
 
-            _seasonMetaCanBeRefreshing = false;
+            _discordChannelsCanBeRefreshing = false;
             _seasonMetaNeedRefreshing = true;
+            _registryNeedRefreshing = true;
 
             if (Config.LoadRanks)
                 ReflectEssentials();
@@ -565,11 +695,23 @@ Progress Weight: {2}
                     Logging.Instance.LogError(GetType(), e, "WATCHER FAILED ");
                 }
 
-                _seasonMetaCanBeRefreshing = true;
+                _discordChannelsCanBeRefreshing = true;
                 if (DiscordBridge.Ready)
                 {
-                    RefreshSeasonMetaChannel().Wait();
-                    _seasonMetaNeedRefreshing = false;
+                    if (_discordChannelsCanBeRefreshing)
+                    {
+                        _seasonMetaNeedRefreshing = false;
+                        MyAPIGateway.Parallel.Start(() => {
+                            RefreshSeasonMetaChannel().Wait();
+                        });
+                    }
+                    if (_registryNeedRefreshing)
+                    {
+                        _registryNeedRefreshing = false;
+                        MyAPIGateway.Parallel.Start(() => {
+                            RefreshRegistryChannel().Wait();
+                        });
+                    }
                 }
 
                 if (_chatmanager == null)
@@ -590,10 +732,22 @@ Progress Weight: {2}
 
         private void DiscordBridge_OnReady()
         {
-            if (_seasonMetaNeedRefreshing && _seasonMetaCanBeRefreshing)
+            if (_seasonMetaNeedRefreshing)
             {
-                RefreshSeasonMetaChannel().Wait();
-                _seasonMetaNeedRefreshing = false;
+                if (_discordChannelsCanBeRefreshing)
+                {
+                    _seasonMetaNeedRefreshing = false;
+                    MyAPIGateway.Parallel.Start(() => {
+                        RefreshSeasonMetaChannel().Wait();
+                    });
+                }
+                if (_registryNeedRefreshing)
+                {
+                    _registryNeedRefreshing = false;
+                    MyAPIGateway.Parallel.Start(() => {
+                        RefreshRegistryChannel().Wait();
+                    });
+                }
             }
         }
 
