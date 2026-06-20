@@ -16,6 +16,43 @@ namespace SEDiscordBridge
         public static readonly Logger Log = LogManager.GetCurrentClassLogger();
         public SEDiscordBridgePlugin Plugin => (SEDiscordBridgePlugin)Context.Plugin;
 
+        [Command("grid", "Manage the ark grid")]
+        [Permission(MyPromoteLevel.Admin)]
+        public void Grid(string operation)
+        {
+            if (string.IsNullOrWhiteSpace(operation))
+            {
+                Log.Warn($"Grid command was call with null operation parameter!");
+                return;
+            }
+            operation = operation.ToLower().Trim();
+
+            switch (operation)
+            {
+                case "set":
+                    var target = Context.Player.Character?.Parent;
+                    if (target != null && target is IMyCockpit cockpit)
+                    {
+                        var needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.ArkGrid.EntityId;
+                        SEDBStorage.Instance.ArkGrid.EntityId = cockpit.CubeGrid.EntityId;
+                        Log.Info($"Ark interactive grid configure to {cockpit.CubeGrid.DisplayName} [{cockpit.CubeGrid.EntityId}]");
+                        if (needReset)
+                            ArkLogisticRelayController.Init();
+                    }
+                    else
+                    {
+                        Log.Warn($"Grid SET command was call out of the target grid cockpit!");
+                    }
+                    break;
+                case "reset":
+                    ArkLogisticRelayController.Init();
+                    break;
+                default:
+                    break;
+            }
+
+        }
+
         [Command("bank", "Manage the ark bank account (valid operatios: deposit, withdraw)")]
         [Permission(MyPromoteLevel.None)]
         public void Bank(string operation, ulong value = 0)

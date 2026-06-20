@@ -58,6 +58,9 @@ namespace SEDiscordBridge.Patches
         }
 
         [XmlElement]
+        public ArkGridStorage ArkGrid { get; set; } = new ArkGridStorage();
+
+        [XmlElement]
         public ProfessionStorage Profession { get; set; } = new ProfessionStorage();
 
         [XmlElement]

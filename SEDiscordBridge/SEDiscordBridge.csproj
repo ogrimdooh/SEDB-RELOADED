@@ -276,13 +276,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArkCommands.cs" />
+    <Compile Include="ArkLogisticRelayController.cs" />
     <Compile Include="Commands.cs" />
+    <Compile Include="Entities\Command.cs" />
     <Compile Include="Extensions\IMyCharacterExtensions.cs" />
     <Compile Include="Extensions\IMyPlayerExtensions.cs" />
     <Compile Include="Extensions\MyDamageInformationExtensions.cs" />
     <Compile Include="GameWatcherController.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="MsgWorker.cs" />
+    <Compile Include="Patches\ButtonPanelPatch.cs" />
     <Compile Include="Patches\CompetetiveContainerOpenedPatch.cs" />
     <Compile Include="Patches\ContainerOpenedPatch.cs" />
     <Compile Include="Patches\GridJumpedPatch.cs" />
@@ -301,6 +304,7 @@
     <Compile Include="Storage\Base\BaseStorage.cs" />
     <Compile Include="Storage\PlayerStorage.cs" />
     <Compile Include="Storage\PlayerStorageValue.cs" />
+    <Compile Include="Storage\ProfessionChatEntryId.cs" />
     <Compile Include="Storage\ProfessionStorage.cs" />
     <Compile Include="Storage\RegistredUserInfo.cs" />
     <Compile Include="Storage\RegistryStorage.cs" />

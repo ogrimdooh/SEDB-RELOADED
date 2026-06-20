@@ -5,16 +5,15 @@ using System.Xml.Serialization;
 
 namespace SEDiscordBridge.Patches
 {
-    public class ProfessionChatEntryId
+
+    public class ArkGridStorage
     {
 
         [XmlElement]
-        public string ProfessionId { get; set; }
-
-        [XmlElement]
-        public ulong MsgId { get; set; }
+        public long EntityId { get; set; }
 
     }
+
     public class ProfessionStorage
     {
 

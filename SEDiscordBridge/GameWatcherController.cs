@@ -1,31 +1,41 @@
-﻿using System;
-using System.Linq;
-using Sandbox.Game.Entities;
+﻿using Newtonsoft.Json.Linq;
+using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
-using Sandbox.Game.World;
-using VRage.Game.ModAPI;
-using VRage.Utils;
-using VRage.Game.Definitions.SessionComponents;
-using VRage.Game.ObjectBuilders.Definitions.SessionComponents;
-using VRage.Game.ObjectBuilders.Components;
+using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Character;
+using Sandbox.Game.GameSystems;
 using Sandbox.Game.SessionComponents;
-using System.Diagnostics;
+using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Patches;
-using static SEDiscordBridge.Patches.MyDamageInformationExtensions;
-using VRage.Game.Entity;
-using System.Collections.Generic;
-using Sandbox.Common.ObjectBuilders;
-using Sandbox.Game.GameSystems;
+using System;
 using System.Collections.Concurrent;
-using static VRage.Dedicated.Configurator.SelectInstanceForm;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using Torch.Commands;
+using VRage.Game.Definitions.SessionComponents;
+using VRage.Game.Entity;
+using VRage.Game.ModAPI;
+using VRage.Game.ObjectBuilders.Components;
+using VRage.Game.ObjectBuilders.Definitions.SessionComponents;
+using VRage.Utils;
 using VRageMath;
-using Sandbox.Game.Entities.Character;
+using static SEDiscordBridge.Patches.MyDamageInformationExtensions;
+using static VRage.Dedicated.Configurator.SelectInstanceForm;
 
 namespace SEDiscordBridge
 {
+
     public static class GameWatcherController
     {
+
+        public const ushort NETWORK_ID_CALLSERVERSYSTEM = 40432;
+        public const ushort NETWORK_ID_CALLCLIENTSYSTEM = 40431;
+
+        public const string BRODCAST_LCDTEXTCHANGE = "BRODCAST_LCDTEXTCHANGE";
 
         private static bool _initialized = false;
         public static void Init()
@@ -64,6 +74,8 @@ namespace SEDiscordBridge
                     Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to Player Connected/Disconnected");
                     MySession.Static.Players.PlayersChanged += Players_PlayersChanged;
                 }
+                Logging.Instance.LogInfo(typeof(GameWatcherController), $"Register Secure Message Handler: Id={NETWORK_ID_CALLSERVERSYSTEM}");
+                MyAPIGateway.Multiplayer.RegisterSecureMessageHandler(NETWORK_ID_CALLSERVERSYSTEM, ServerUpdateMsgHandler);
             }
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Do Initial Load Entities");
             DoInitialLoadEntities();
@@ -72,6 +84,66 @@ namespace SEDiscordBridge
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to MyEntities OnEntityRemove");
             MyEntities.OnEntityRemove += Entities_OnEntityRemove;
             _initialized = true;
+        }
+
+        private static void ServerUpdateMsgHandler(ushort netId, byte[] data, ulong steamId, bool fromServer)
+        {
+            try
+            {
+                if (netId != NETWORK_ID_CALLSERVERSYSTEM)
+                    return;
+
+                Logging.Instance.LogInfo(typeof(GameWatcherController), $"Received message from server, steamId: {steamId}, data length: {data.Length}");
+
+                var message = Encoding.Unicode.GetString(data);
+                var mCommandData = MyAPIGateway.Utilities.SerializeFromXML<SEDiscordBridge.Entities.Command>(message);
+                if (mCommandData.Content.Length > 0)
+                {
+                    Logging.Instance.LogInfo(typeof(GameWatcherController), $"Command {mCommandData.Content[0]} content length: {mCommandData.Content.Length}");
+
+                    switch (mCommandData.Content[0])
+                    {
+                        // TODO
+                    }
+                }
+                else
+                {
+                    Logging.Instance.LogInfo(typeof(GameWatcherController), $"Command content is empty");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.Instance.LogError(typeof(GameWatcherController), ex);
+            }
+        }
+
+        public static void SendLcdTextChange(ulong target, long lcdId, string lcdText)
+        {
+            var content = new List<string>
+            {
+                BRODCAST_LCDTEXTCHANGE,
+                lcdId.ToString(),
+                lcdText
+            };
+            var cmd = new Entities.Command(0, content.ToArray()); 
+            string messageToSend = MyAPIGateway.Utilities.SerializeToXML<Entities.Command>(cmd);
+            if (target != 0)
+            {
+                Logging.Instance.LogInfo(typeof(GameWatcherController), $"Sending command to {target} with content Length={messageToSend.Length}");
+                MyAPIGateway.Multiplayer.SendMessageTo(
+                    NETWORK_ID_CALLCLIENTSYSTEM,
+                    Encoding.Unicode.GetBytes(messageToSend),
+                    target
+                );
+            }
+            else
+            {
+                Logging.Instance.LogInfo(typeof(GameWatcherController), $"Sending command to others with content Length={messageToSend.Length}");
+                MyAPIGateway.Multiplayer.SendMessageToOthers(
+                    NETWORK_ID_CALLCLIENTSYSTEM,
+                    Encoding.Unicode.GetBytes(messageToSend)
+                );
+            }
         }
 
         private static void Players_PlayersChanged(bool connected, MyPlayer.PlayerId id)
@@ -371,6 +443,7 @@ namespace SEDiscordBridge
         private static void MySession_OnUnloading()
         {
             SEDBStorage.Save();
+            ArkLogisticRelayController.Dispose();
         }
 
         private static bool canRun;
@@ -407,6 +480,7 @@ namespace SEDiscordBridge
                 {
                     Logging.Instance.LogWarning(typeof(GameWatcherController), "DDBridge not found when Session Ready!");
                 }
+                ArkLogisticRelayController.Init();
             }
             catch (Exception e)
             {
@@ -517,6 +591,7 @@ namespace SEDiscordBridge
                 {
                     MySession.Static.Players.PlayersChanged -= Players_PlayersChanged;
                 }
+                MyAPIGateway.Multiplayer.UnregisterSecureMessageHandler(NETWORK_ID_CALLSERVERSYSTEM, ServerUpdateMsgHandler);
             }
             MyEntities.OnEntityAdd -= Entities_OnEntityAdd;
             MyEntities.OnEntityRemove -= Entities_OnEntityRemove;

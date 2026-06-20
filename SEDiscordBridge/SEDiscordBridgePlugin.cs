@@ -408,6 +408,7 @@ Progress Weight: {2}
                                 {
                                     Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
                                     await channel.DeleteMessagesAsync(messages);
+                                    SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.CategoriesMsgIds.Clear();
                                     needNewMessages = true;
                                 }
                                 else
@@ -1185,6 +1186,7 @@ The Second Dawn recognizes their new operational role.";
                         {
                             Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
                             await channel.DeleteMessagesAsync(messages);
+                            SEDBStorage.Instance.Profession.ProfessionsMsgIds.Clear();
                             needNewMessages = true;
                         }
                         else
