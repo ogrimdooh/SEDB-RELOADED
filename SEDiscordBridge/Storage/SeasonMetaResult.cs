@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.ComponentModel;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace SEDiscordBridge.Patches
 {
@@ -55,6 +56,18 @@ namespace SEDiscordBridge.Patches
 
         [XmlArray("Entries"), XmlArrayItem("Entry", typeof(SeasonMetaEntry))]
         public List<SeasonMetaEntry> Entries { get; set; } = new List<SeasonMetaEntry>();
+
+        [XmlArray("Donations"), XmlArrayItem("Donation", typeof(SeasonMetaEntry))]
+        public List<SeasonMetaDonationEntry> Donations { get; set; } = new List<SeasonMetaDonationEntry>();
+
+        public void AddValueToEntry(string categoryId, long amount, float weight)
+        {
+            var item = Entries.FirstOrDefault(x => x.CategoryId == categoryId);
+            if (item != null)
+            {
+                item.Amount += (long)(amount * weight);
+            }
+        }
 
     }
 

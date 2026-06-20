@@ -1,5 +1,7 @@
 ﻿using System.Xml.Serialization;
 using System.Collections.Generic;
+using VRage.Game;
+using System.Linq;
 
 namespace SEDiscordBridge.Patches
 {
@@ -17,6 +19,11 @@ namespace SEDiscordBridge.Patches
 
         [XmlArray("Items"), XmlArrayItem("Item", typeof(SeasonMetaCategoryValidItem))]
         public List<SeasonMetaCategoryValidItem> Items { get; set; } = new List<SeasonMetaCategoryValidItem>();
+
+        public SeasonMetaCategoryValidItem GetItemById(MyDefinitionId itemId)
+        {
+            return Items.FirstOrDefault(x => x.Id.ToMyDefinitionId() == itemId);
+        }
 
     }
 

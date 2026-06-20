@@ -45,6 +45,44 @@ namespace SEDiscordBridge.Patches
             return Configurations.FirstOrDefault(x => x.Id == ActiveConfiguration);
         }
 
+        public List<StorageDefinitionId> GetValidItensIds()
+        {
+            var lista = new List<StorageDefinitionId>();
+            var activeConfiguration = GetActiveConfiguration();
+            if (activeConfiguration != null)
+            {
+                foreach (var entry in activeConfiguration.Entries)
+                {
+                    var category = GetCategoryById(entry.CategoryId);
+                    if (category != null)
+                    {
+                        lista.AddRange(category.Items.Select(x => x.Id));
+                    }
+                }
+            }
+            return lista;
+        }
+
+        public string GetItemCategoryById(MyDefinitionId itemId)
+        {
+            var activeConfiguration = GetActiveConfiguration();
+            if (activeConfiguration != null)
+            {
+                foreach (var entry in activeConfiguration.Entries)
+                {
+                    var category = GetCategoryById(entry.CategoryId);
+                    if (category != null)
+                    {
+                        if (category.Items.Any(x=>x.Id.ToMyDefinitionId() == itemId))
+                        {
+                            return category.Id;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         public SeasonMetaResult GetActiveResult()
         {
             return Results.FirstOrDefault(x => x.Id == ActiveResult);

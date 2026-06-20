@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -33,6 +34,7 @@ using Torch.Server;
 using Torch.Session;
 using VRage.Game;
 using VRage.Game.ModAPI;
+using VRage.Library.Utils;
 using Timer = System.Timers.Timer;
 
 namespace SEDiscordBridge
@@ -275,6 +277,139 @@ namespace SEDiscordBridge
                 }
             }
             return roleData;
+        }
+
+        private const string SEASON_META_DELIVERY_ALERT = @":package: D.A.W.N. Logistics Update
+
+Explorer {0} has completed a cargo delivery to The Second Dawn.
+
+Delivery Class: {1}
+Submitted Mass: {2}
+Processed Items: {3}
+
+{4}
+
+The Ark manifest has been updated. Every shipment brings the next jump closer.";
+
+        public enum DeliveryClassification
+        {
+            Minor = 0,
+            Standard = 1,
+            Major = 2,
+            Critical = 3,
+            Strategic = 4
+        }
+
+        private static Dictionary<DeliveryClassification, string> DELIVERY_CLASSIFICATION = new Dictionary<DeliveryClassification, string>()
+        {
+            { DeliveryClassification.Minor, "Minor Supply Transfer" },
+            { DeliveryClassification.Standard, "Standard Cargo Delivery" },
+            { DeliveryClassification.Major, "Major Logistics Shipment" },
+            { DeliveryClassification.Critical, "Critical Ark Contribution" },
+            { DeliveryClassification.Strategic, "Strategic Survival Shipment" }
+        };
+
+        private static Dictionary<DeliveryClassification, Vector2> DELIVERY_CLASSIFICATION_QTD_RANGE = new Dictionary<DeliveryClassification, Vector2>()
+        {
+            { DeliveryClassification.Minor, new Vector2(0, 1000) },
+            { DeliveryClassification.Standard, new Vector2(1000, 10000) },
+            { DeliveryClassification.Major, new Vector2(10000, 50000) },
+            { DeliveryClassification.Critical, new Vector2(50000, 250000) },
+            { DeliveryClassification.Strategic, new Vector2(250000, float.MaxValue) }
+        };
+
+        private static Dictionary<DeliveryClassification, Vector2> DELIVERY_CLASSIFICATION_MASS_RANGE = new Dictionary<DeliveryClassification, Vector2>()
+        {
+            { DeliveryClassification.Minor, new Vector2(0, 5000) },
+            { DeliveryClassification.Standard, new Vector2(10000, 50000) },
+            { DeliveryClassification.Major, new Vector2(50000, 250000) },
+            { DeliveryClassification.Critical, new Vector2(250000, 1250000) },
+            { DeliveryClassification.Strategic, new Vector2(1250000, float.MaxValue) }
+        };
+
+        private static DeliveryClassification GetDeliveryClassification(long totalItens, float massDonation)
+        {
+            var itemClass = (int)DELIVERY_CLASSIFICATION_QTD_RANGE.FirstOrDefault(x => totalItens >= x.Value.X && totalItens < x.Value.Y).Key;
+            var massClass = (int)DELIVERY_CLASSIFICATION_MASS_RANGE.FirstOrDefault(x => massDonation >= x.Value.X && massDonation < x.Value.Y).Key;
+            return (DeliveryClassification)Math.Max(itemClass, massClass);
+        }
+
+        private static Dictionary<DeliveryClassification, List<string>> DELIVERY_CLASSIFICATION_MSGS = new Dictionary<DeliveryClassification, List<string>>()
+        {
+            { 
+                DeliveryClassification.Minor, 
+                new List<string>() 
+                {
+                    "D.A.W.N. has classified this shipment as a minor supply contribution.",
+                    "A small shipment has been secured within the Ark logistics reserve.",
+                    "Every crate matters. D.A.W.N. has accepted the submitted cargo into the Ark manifest."
+                } 
+            },
+            { 
+                DeliveryClassification.Standard, 
+                new List<string>()
+                {
+                    "D.A.W.N. has classified this shipment as a standard logistics contribution.",
+                    "The submitted cargo has strengthened the Ark reserve and improved jump-cycle readiness.",
+                    "A meaningful contribution has been added to the Second Dawn supply chain."
+                } 
+            },
+            { 
+                DeliveryClassification.Major, 
+                new List<string>()
+                {
+                    "D.A.W.N. has classified this shipment as a major logistics contribution.",
+                    "Ark storage crews have been dispatched to process the incoming shipment.",
+                    "This delivery has significantly reinforced the Ark manifest for the current jump cycle."
+                } 
+            },
+            { 
+                DeliveryClassification.Critical, 
+                new List<string>()
+                {
+                    "D.A.W.N. has classified this shipment as a critical logistics contribution.",
+                    "Multiple cargo divisions have been assigned to process the scale of this delivery.",
+                    "The Second Dawn reports a substantial increase in jump-cycle readiness after this delivery."
+                } 
+            },
+            { 
+                DeliveryClassification.Strategic, 
+                new List<string>()
+                {
+                    "D.A.W.N. has escalated this shipment to Ark Command priority. The manifest records will remember this contribution.",
+                    "Cargo capacity alerts triggered across the relay. The Second Dawn has accepted a shipment of exceptional scale.",
+                    "This delivery has been marked as a strategic contribution to the survival of the Ark Initiative."
+                } 
+            }
+        };
+
+        private static string GetRandomClassificationMsg(DeliveryClassification classification)
+        {
+            return DELIVERY_CLASSIFICATION_MSGS[classification].OrderBy(x => MyRandom.Instance.NextFloat()).FirstOrDefault();
+        }
+
+        public void AlertDonationIsCompleted(ulong steamId, long totalItens, float massDonation)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId))
+            {
+                if (SEDBStorage.Instance.Registry.FindUserBySteamId(steamId, out ulong userId))
+                {
+                    var user = DiscordBridge.Discord.GetUserAsync(userId).Result;
+                    var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                    if (channel != null && user != null)
+                    {
+                        Log.Info("Sending new delivery message to the channel...");
+                        var classification = GetDeliveryClassification(totalItens, massDonation);
+                        var msg = string.Format(SEASON_META_DELIVERY_ALERT,
+                            user.Username,
+                            DELIVERY_CLASSIFICATION[classification],
+                            massDonation.ToString("N2"),
+                            totalItens.ToString("N2"),
+                            GetRandomClassificationMsg(classification));
+                        MsgWorker.SendToDiscord(channel, msg, true);
+                    }
+                }
+            }
         }
 
         private const string SEASON_META_START_MESSAGE_TEMPLATE = @":satellite: **THE SECOND DAWN — JUMP STATUS TERMINAL**

@@ -2,6 +2,7 @@
 
 namespace SEDiscordBridge.Patches
 {
+
     public class SeasonMetaEntry
     {
 
