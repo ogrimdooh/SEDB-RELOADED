@@ -1,6 +1,8 @@
 ﻿using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems;
 using Sandbox.Game.World;
+using SEDiscordBridge.Storage;
+using SEDiscordBridge.Storage.Player;
 using System;
 using VRage.Network;
 using VRageMath;

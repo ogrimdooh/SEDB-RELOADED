@@ -7,7 +7,7 @@ using System.IO;
 using static System.BitStreamExtensions;
 using System.Windows.Documents;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.Base
 {
     public abstract class BaseStorage
     {
@@ -76,15 +76,15 @@ namespace SEDiscordBridge.Patches
                         settings.Version = currentVersion;
                     }
                     adjusted = adjusted || !validade(settings);
-                    if (adjusted) 
-                        Save<T>(settings, tryJsonFirst, fileName, jsonFileName);
+                    if (adjusted)
+                        Save(settings, tryJsonFirst, fileName, jsonFileName);
                 }
                 else if (createIfNotFound)
                 {
                     settings = create();
                     settings.Version = currentVersion;
                     validade(settings);
-                    Save<T>(settings, tryJsonFirst, fileName, jsonFileName);
+                    Save(settings, tryJsonFirst, fileName, jsonFileName);
                 }
                 settings?.OnAfterLoad();
             }

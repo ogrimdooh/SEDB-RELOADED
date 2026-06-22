@@ -1,7 +1,8 @@
-﻿using System.Xml.Serialization;
+﻿using SEDiscordBridge.Storage.Base;
+using System.Xml.Serialization;
 using VRage.ObjectBuilders;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
     public class SeasonMetaCategoryValidItem
     {

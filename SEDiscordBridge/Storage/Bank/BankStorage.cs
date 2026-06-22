@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Xml.Serialization;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.Bank
 {
     public class BankStorage
     {

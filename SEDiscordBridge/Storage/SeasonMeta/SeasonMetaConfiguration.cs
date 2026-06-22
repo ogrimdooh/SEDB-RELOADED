@@ -1,7 +1,7 @@
 ﻿using System.Xml.Serialization;
 using System.Collections.Generic;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
 
     public class SeasonMetaConfiguration

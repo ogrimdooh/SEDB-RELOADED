@@ -6,7 +6,7 @@ using Sandbox.Game;
 using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using SEDiscordBridge.Patches;
+using SEDiscordBridge.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;

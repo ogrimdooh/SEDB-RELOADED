@@ -4,7 +4,7 @@ using System.Linq;
 using System;
 using Newtonsoft.Json;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.Player
 {
 
     public class PlayerStorage
@@ -40,7 +40,7 @@ namespace SEDiscordBridge.Patches
             {
                 Logging.Instance.LogError(GetType(), e);
             }
-            return default(T);
+            return default;
         }
 
         public void SetValue<T>(string key, T value)

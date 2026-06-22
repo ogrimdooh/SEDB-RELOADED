@@ -2,7 +2,7 @@ using NLog;
 using Sandbox.Game.GameSystems.BankingAndCurrency;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using SEDiscordBridge.Patches;
+using SEDiscordBridge.Storage;
 using Torch.Commands;
 using Torch.Commands.Permissions;
 using VRage.Game.ModAPI;

@@ -4,8 +4,9 @@ using System;
 using System.ComponentModel;
 using Newtonsoft.Json;
 using System.Linq;
+using SEDiscordBridge.Storage;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
     public class SeasonMetaResult
     {

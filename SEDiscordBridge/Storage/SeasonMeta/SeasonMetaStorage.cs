@@ -1,6 +1,8 @@
 ﻿using Sandbox.Common.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Definitions;
+using SEDiscordBridge.Patches;
+using SEDiscordBridge.Storage.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +12,7 @@ using VRage.Library.Utils;
 using VRage.ObjectBuilders;
 using VRageMath;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
 
     public class SeasonMetaStorage
@@ -193,7 +195,7 @@ namespace SEDiscordBridge.Patches
         private bool IsSurvivalResource(MyDefinitionId id)
         {
             var ignoredSubTypes = new string[] { "RadiationKit", "Powerkit", "Medkit" };
-            return (id.TypeId == typeof(MyObjectBuilder_ConsumableItem) && !ignoredSubTypes.Contains(id.SubtypeName)) ||
+            return id.TypeId == typeof(MyObjectBuilder_ConsumableItem) && !ignoredSubTypes.Contains(id.SubtypeName) ||
                 id.TypeId == typeof(MyObjectBuilder_SeedItem);
         }
 

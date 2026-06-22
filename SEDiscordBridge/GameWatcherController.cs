@@ -8,6 +8,8 @@ using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Patches;
+using SEDiscordBridge.Storage;
+using SEDiscordBridge.Storage.Player;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

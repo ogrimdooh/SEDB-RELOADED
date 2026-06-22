@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.Bank
 {
     public class BankAccount
     {

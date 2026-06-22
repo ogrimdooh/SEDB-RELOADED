@@ -1,4 +1,4 @@
-﻿namespace SEDiscordBridge.Patches
+﻿namespace SEDiscordBridge.Storage.Bank
 {
     public enum BankTransactionType
     {

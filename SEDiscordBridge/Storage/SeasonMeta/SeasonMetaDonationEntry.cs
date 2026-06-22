@@ -1,29 +1,24 @@
 ﻿using Newtonsoft.Json;
+using SEDiscordBridge.Storage;
 using System;
 using System.Xml.Serialization;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
-    public class BankTransaction
+    public class SeasonMetaDonationEntry
     {
 
         [XmlElement]
+        public ulong SteamId { get; set; }
+
+        [XmlElement]
+        public long ItemCount { get; set; }
+
+        [XmlElement]
+        public float MassAmount { get; set; }
+
+        [XmlElement]
         public string OperationDateValue { get; set; }
-
-        [XmlElement]
-        public BankTransactionType OperationType { get; set; }
-
-        [XmlElement]
-        public ulong Value { get; set; }
-
-        [XmlElement]
-        public ulong ReferenceValue { get; set; }
-
-        [XmlElement]
-        public string Name { get; set; }
-
-        [XmlElement]
-        public string Description { get; set; }
 
         [XmlIgnore]
         [JsonIgnore]

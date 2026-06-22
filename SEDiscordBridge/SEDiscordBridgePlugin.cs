@@ -8,6 +8,12 @@ using Sandbox.Game.Gui;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Patches;
+using SEDiscordBridge.Storage;
+using SEDiscordBridge.Storage.Bank;
+using SEDiscordBridge.Storage.Base;
+using SEDiscordBridge.Storage.Player;
+using SEDiscordBridge.Storage.Profession;
+using SEDiscordBridge.Storage.SeasonMeta;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -583,8 +589,8 @@ Progress Weight: {2}
                             var nextSeason = SEDBStorage.Instance.SeasonMeta.GetTimeToNextSeason();
                             var overallMessage = string.Format(SEASON_META_OVERALL_MESSAGE_TEMPLATE, 
                                 currentProgress.ToString("P2"), 
-                                nextCheckpoint.ToString(@"d'd 'm'm 's's'"), 
-                                nextSeason.ToString(@"d'd 'm'm 's's'"),
+                                nextCheckpoint.ToString(@"d'd 'h'h 'm'm'"), 
+                                nextSeason.ToString(@"d'd 'h'h 'm'm'"),
                                 GetSeasonMetaStatusString(currentProgress),
                                 GetSeasonMetaSubStatusString(currentProgress)
                             );
@@ -658,6 +664,7 @@ Progress Weight: {2}
                                     }
                                 }
                             }
+                            _lastUpdateSeasonMeta = DateTime.Now;
                         }
                     }
                     catch (Exception e)
@@ -1415,6 +1422,7 @@ The Second Dawn recognizes their new operational role.";
         private bool _registryNeedRefreshing = false;
         private bool _bankNeedRefreshing = false;
         private bool _professionNeedRefreshing = false;
+        private DateTime _lastUpdateSeasonMeta = DateTime.MinValue;
 
         public void LoadSEDB()
         {
@@ -1674,6 +1682,19 @@ The Second Dawn recognizes their new operational role.";
                         i = 0;
                         DiscordBridge.CooldownNeutral = 0;
                     }
+                }
+            }
+
+            if (!_seasonMetaNeedRefreshing)
+            {
+                var timeSinceLastMetaUpdate = DateTime.Now - _lastUpdateSeasonMeta;
+                if (timeSinceLastMetaUpdate.TotalMinutes > 60)
+                {
+                    _seasonMetaNeedRefreshing = true;
+                    MyAPIGateway.Parallel.Start(() => {
+                        RefreshSeasonMetaChannel().Wait();
+                        _seasonMetaNeedRefreshing = false;
+                    });
                 }
             }
         }

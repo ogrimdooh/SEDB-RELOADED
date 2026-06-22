@@ -2,8 +2,14 @@
 using System.Xml.Serialization;
 using System.Collections.Generic;
 using System.Linq;
+using SEDiscordBridge.Storage.SeasonMeta;
+using SEDiscordBridge.Storage.Registry;
+using SEDiscordBridge.Storage.Profession;
+using SEDiscordBridge.Storage.Player;
+using SEDiscordBridge.Storage.Base;
+using SEDiscordBridge.Storage.Bank;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage
 {
 
     public class SEDBStorage : BaseStorage
@@ -102,7 +108,7 @@ namespace SEDiscordBridge.Patches
 
         public void SetPlayerValue<T>(ulong id, string key, T value)
         {
-            GetPlayer(id).SetValue<T>(key, value);
+            GetPlayer(id).SetValue(key, value);
         }
 
         public void RemoveEntity(ulong id)

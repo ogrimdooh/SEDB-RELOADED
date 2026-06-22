@@ -1,6 +1,6 @@
 ﻿using System.Xml.Serialization;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
     public class SeasonMetaChatEntryId
     {

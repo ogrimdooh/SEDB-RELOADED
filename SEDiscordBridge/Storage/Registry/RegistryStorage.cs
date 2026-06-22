@@ -4,7 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Xml.Serialization;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.Registry
 {
 
     public class RegistryStorage

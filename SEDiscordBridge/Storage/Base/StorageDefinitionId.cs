@@ -1,7 +1,7 @@
 ﻿using System.Xml.Serialization;
 using VRage.Game;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.Base
 {
     public class StorageDefinitionId
     {
@@ -26,7 +26,7 @@ namespace SEDiscordBridge.Patches
             {
                 return defId;
             }
-            return default(MyDefinitionId);
+            return default;
         }
 
     }

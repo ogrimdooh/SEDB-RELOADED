@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using VRage.Game;
 using System.Linq;
+using SEDiscordBridge.Patches;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Storage.SeasonMeta
 {
     public class SeasonMetaCategory
     {
