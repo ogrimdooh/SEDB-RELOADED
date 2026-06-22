@@ -399,7 +399,7 @@ namespace SEDiscordBridge
         {
             try
             {
-                if (_inicialLoadComplete)
+                if (_inicialLoadComplete && MySession.Static != null && MySession.Static.Ready)
                 {
 
                     if (!SEDiscordBridgePlugin.Static.Config.Enabled) return;
@@ -476,7 +476,7 @@ namespace SEDiscordBridge
                         }
                     });
                     // Check Season Meta Storage to load initial data
-                    SEDBStorage.Instance.SeasonMeta.LoadInitialData();
+                    SEDBStorage.Instance.SeasonMetaConfig.LoadInitialData();
                 }
                 else
                 {

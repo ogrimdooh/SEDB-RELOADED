@@ -517,11 +517,11 @@ Progress Weight: {2}
         public async Task RefreshSeasonMetaChannel()
         {
             Log.Info("Refreshing Season Meta Channel...");
-            if (!string.IsNullOrWhiteSpace(Config.SeasonMetaChannelID) && SEDBStorage.Instance.SeasonMeta.Enabled)
+            if (!string.IsNullOrWhiteSpace(Config.SeasonMetaChannelID) && SEDBStorage.Instance.SeasonMetaConfig.Enabled)
             {
                 Log.Info("Season Meta is enabled, updating channel...");
-                var seasonConfig = SEDBStorage.Instance.SeasonMeta.GetActiveConfiguration();
-                var seasonResult = SEDBStorage.Instance.SeasonMeta.GetActiveResult();
+                var seasonConfig = SEDBStorage.Instance.SeasonMetaConfig.GetActiveConfiguration();
+                var seasonResult = SEDBStorage.Instance.SeasonMetaResult.GetActiveResult();
                 if (seasonConfig != null && seasonResult != null)
                 {
                     Log.Info("Season Meta configuration and result found, updating channel...");
@@ -540,7 +540,7 @@ Progress Weight: {2}
                                 // Calcula o total de mensagens que deveriam estar no canal (mensagem geral + mensagens de categoria)
                                 var expectedMessageCount = 2 + seasonConfig.Entries.Count; // 2 para a mensagem geral + 1 para cada categoria
                                 // Verifica se todas as mensagens com ids salvos existem, caso contrário, limpa o canal para evitar mensagens desatualizadas
-                                var ids = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.GetAllMessagesIds();
+                                var ids = SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.GetAllMessagesIds();
                                 var msgsIds = messages.Select(m => m.Id).ToHashSet();
                                 Log.Info($"Expected message count: {expectedMessageCount}, actual message count: {messages.Count}, expected IDs: {string.Join(", ", ids)}, actual IDs: {string.Join(", ", msgsIds)}");
                                 if (expectedMessageCount != messages.Count || 
@@ -549,7 +549,7 @@ Progress Weight: {2}
                                 {
                                     Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
                                     await channel.DeleteMessagesAsync(messages);
-                                    SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.CategoriesMsgIds.Clear();
+                                    SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.CategoriesMsgIds.Clear();
                                     needNewMessages = true;
                                 }
                                 else
@@ -569,14 +569,14 @@ Progress Weight: {2}
                                 Log.Info("Sending new start message to the channel...");
                                 MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
                                 {
-                                    SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.StartMsgId = dMsg.Id;
+                                    SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.StartMsgId = dMsg.Id;
                                 });
                             } 
                             else
                             {
                                 Log.Info("Updating existing start message...");
                                 // Atualiza a mensagem geral
-                                var generalMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.StartMsgId;
+                                var generalMsgId = SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.StartMsgId;
                                 var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
                                 if (generalMsg != null && generalMsg.Content.CompareTo(startMsg) != 0)
                                 {
@@ -584,9 +584,9 @@ Progress Weight: {2}
                                 }
                             }
                             // Envia mensagem com o progresso geral
-                            var currentProgress = SEDBStorage.Instance.SeasonMeta.GetCurrentProgress();
-                            var nextCheckpoint = SEDBStorage.Instance.SeasonMeta.GetTimeToNextCheckpoint();
-                            var nextSeason = SEDBStorage.Instance.SeasonMeta.GetTimeToNextSeason();
+                            var currentProgress = SEDBStorage.Instance.SeasonMetaResult.GetCurrentProgress();
+                            var nextCheckpoint = SEDBStorage.Instance.SeasonMetaResult.GetTimeToNextCheckpoint();
+                            var nextSeason = SEDBStorage.Instance.SeasonMetaResult.GetTimeToNextSeason();
                             var overallMessage = string.Format(SEASON_META_OVERALL_MESSAGE_TEMPLATE, 
                                 currentProgress.ToString("P2"), 
                                 nextCheckpoint.ToString(@"d'd 'h'h 'm'm'"), 
@@ -599,13 +599,13 @@ Progress Weight: {2}
                                 Log.Info("Sending new overall progress message to the channel...");
                                 MsgWorker.SendToDiscord(channel, overallMessage, true, (dMsg) =>
                                 {
-                                    SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.OverAllMsgId = dMsg.Id;
+                                    SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.OverAllMsgId = dMsg.Id;
                                 });
                             } 
                             else
                             {
                                 Log.Info("Updating existing overall progress message...");
-                                var overallMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.OverAllMsgId;
+                                var overallMsgId = SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.OverAllMsgId;
                                 var overallMsg = messages.FirstOrDefault(m => m.Id == overallMsgId);
                                 if (overallMsg != null && overallMsg.Content.CompareTo(overallMessage) != 0)
                                 {
@@ -613,11 +613,11 @@ Progress Weight: {2}
                                 }
                             }
                             // Envia mensagens
-                            var allProgress = SEDBStorage.Instance.SeasonMeta.GetActiveResultProgress();
+                            var allProgress = SEDBStorage.Instance.SeasonMetaResult.GetActiveResultProgress();
                             Log.Info($"Updating category messages, total categories: {seasonConfig.Entries.Count}, progress entries: {allProgress.Count}...");
                             foreach (var item in seasonConfig.Entries)
                             {
-                                var categoryInfo = SEDBStorage.Instance.SeasonMeta.GetCategoryById(item.CategoryId);
+                                var categoryInfo = SEDBStorage.Instance.SeasonMetaConfig.GetCategoryById(item.CategoryId);
                                 if (categoryInfo != null && allProgress.ContainsKey(item.CategoryId))
                                 {
                                     var resultEntry = seasonResult.Entries.FirstOrDefault(e => e.CategoryId == item.CategoryId);
@@ -642,7 +642,7 @@ Progress Weight: {2}
                                     {
                                         Log.Info($"Sending new message for category {categoryInfo.Name} to the channel...");
                                         MsgWorker.SendToDiscord(channel, categoryMessage, true, (dMsg) => {
-                                            SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.CategoriesMsgIds.Add(new SeasonMetaChatEntryId()
+                                            SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.CategoriesMsgIds.Add(new SeasonMetaChatEntryId()
                                             {
                                                 CategoryId = item.CategoryId,
                                                 MsgId = dMsg.Id
@@ -652,7 +652,7 @@ Progress Weight: {2}
                                     else
                                     {
                                         Log.Info($"Updating existing message for category {categoryInfo.Name}...");
-                                        var categoryMsgId = SEDBStorage.Instance.SeasonMeta.ChatMessagesIds.CategoriesMsgIds.FirstOrDefault(m => m.CategoryId == item.CategoryId)?.MsgId;
+                                        var categoryMsgId = SEDBStorage.Instance.SeasonMetaConfig.ChatMessagesIds.CategoriesMsgIds.FirstOrDefault(m => m.CategoryId == item.CategoryId)?.MsgId;
                                         if (categoryMsgId != null)
                                         {
                                             var categoryMsg = messages.FirstOrDefault(m => m.Id == categoryMsgId);
@@ -736,6 +736,7 @@ The Ark recognizes their signal. The journey continues with one more soul aboard
             if (SEDBStorage.Instance.Registry.Enabled)
             {
                 await DDBridge.SendDmMessage(userId, REGISTRY_DM_REGISTRY_COMPLETED);
+                await DDBridge.AddRoleToUser(userId, SEDBStorage.Instance.Registry.RoleId);
             }
         }
 
@@ -1180,7 +1181,7 @@ Explorer **{0}** has joined the **{1} Division**.
 
 The Second Dawn recognizes their new operational role.";
 
-        public void AlertChangeProffesionIsCompleted(string userName, string profName)
+        public async Task AlertChangeProffesionIsCompleted(DiscordUser user, ProfessionStorage.ProfessionInfo professionInfo)
         {
             if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId) && SEDBStorage.Instance.Registry.Enabled)
             {
@@ -1188,7 +1189,9 @@ The Second Dawn recognizes their new operational role.";
                 if (channel != null)
                 {
                     Log.Info("Sending prof changed to the channel...");
-                    MsgWorker.SendToDiscord(channel, string.Format(PROFESSION_ALERT_MESSAGE, userName, profName), true);
+                    MsgWorker.SendToDiscord(channel, string.Format(PROFESSION_ALERT_MESSAGE, user.Username, professionInfo.Name), true);
+                    await DDBridge.RemoveRoleToUser(user.Id, ProfessionStorage.Instance.GetOthersRolesIds(professionInfo.Id).ToArray());
+                    await DDBridge.AddRoleToUser(user.Id, ProfessionStorage.Instance.GetRolesId(professionInfo.Id));
                 }
             }
         }
@@ -1294,7 +1297,7 @@ The Second Dawn recognizes their new operational role.";
                     }
                     if (doAlert)
                     {
-                        AlertChangeProffesionIsCompleted(user.Username, profInfo.Name);
+                        AlertChangeProffesionIsCompleted(user, profInfo);
                     }
                 }
             }

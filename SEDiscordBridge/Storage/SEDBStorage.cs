@@ -8,6 +8,9 @@ using SEDiscordBridge.Storage.Profession;
 using SEDiscordBridge.Storage.Player;
 using SEDiscordBridge.Storage.Base;
 using SEDiscordBridge.Storage.Bank;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Newtonsoft.Json;
+using SEDiscordBridge.Storage.FunctionalGrids;
 
 namespace SEDiscordBridge.Storage
 {
@@ -61,22 +64,73 @@ namespace SEDiscordBridge.Storage
             {
                 Logging.Instance.LogError(typeof(BaseStorage), e);
             }
+            ServerFunctionalGridsStorage.Save();
+            ProfessionStorage.Save();
+            BankStorage.Save();
+            RegistryStorage.Save();
+            SeasonMetaConfigStorage.Save();
+            SeasonMetaResultStorage.Save();
         }
 
-        [XmlElement]
-        public ArkGridStorage ArkGrid { get; set; } = new ArkGridStorage();
+        [XmlIgnore]
+        [JsonIgnore]
+        public ServerFunctionalGridsStorage FunctionalGrids
+        {
+            get
+            {
+                return ServerFunctionalGridsStorage.Instance;
+            }
+        }
 
-        [XmlElement]
-        public ProfessionStorage Profession { get; set; } = new ProfessionStorage();
+        [XmlIgnore]
+        [JsonIgnore]
+        public ProfessionStorage Profession
+        {
+            get
+            {
+                return ProfessionStorage.Instance;
+            }
+        }
 
-        [XmlElement]
-        public BankStorage Bank { get; set; } = new BankStorage();
-        
-        [XmlElement]
-        public RegistryStorage Registry { get; set; } = new RegistryStorage();
+        [XmlIgnore]
+        [JsonIgnore]
+        public BankStorage Bank 
+        { 
+            get
+            {
+                return BankStorage.Instance;
+            }
+        }
 
-        [XmlElement]
-        public SeasonMetaStorage SeasonMeta { get; set; } = new SeasonMetaStorage();
+        [XmlIgnore]
+        [JsonIgnore]
+        public RegistryStorage Registry
+        {
+            get
+            {
+                return RegistryStorage.Instance;
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public SeasonMetaConfigStorage SeasonMetaConfig
+        {
+            get
+            {
+                return SeasonMetaConfigStorage.Instance;
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public SeasonMetaResultStorage SeasonMetaResult
+        {
+            get
+            {
+                return SeasonMetaResultStorage.Instance;
+            }
+        }
 
         [XmlArray("Players"), XmlArrayItem("Player", typeof(PlayerStorage))]
         public List<PlayerStorage> Players { get; set; } = new List<PlayerStorage>();

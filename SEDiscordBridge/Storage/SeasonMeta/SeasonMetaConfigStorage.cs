@@ -3,29 +3,73 @@ using Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Definitions;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage.Base;
+using SEDiscordBridge.Storage.Registry;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Xml.Serialization;
 using VRage.Game;
 using VRage.Library.Utils;
 using VRage.ObjectBuilders;
-using VRageMath;
 
 namespace SEDiscordBridge.Storage.SeasonMeta
 {
 
-    public class SeasonMetaStorage
+    public class SeasonMetaConfigStorage : BaseStorage
     {
+
+        private const int CURRENT_VERSION = 1;
+        private const string FILE_NAME = "SEDB.SeasonMeta.Config.Storage.xml";
+        private const string JSON_FILE_NAME = "SEDB.SeasonMeta.Config.Storage.json";
+        private const bool USE_JSON = true;
+
+        private static SeasonMetaConfigStorage _instance;
+        public static SeasonMetaConfigStorage Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = Load();
+                return _instance;
+            }
+        }
+
+        private static bool Validate(SeasonMetaConfigStorage settings)
+        {
+            var res = true;
+            return res;
+        }
+
+        private static SeasonMetaConfigStorage Upgrade(SeasonMetaConfigStorage settings)
+        {
+
+            return settings;
+        }
+
+        public static SeasonMetaConfigStorage Load()
+        {
+            _instance = Load(USE_JSON, FILE_NAME, JSON_FILE_NAME, CURRENT_VERSION, Validate, () => { return new SeasonMetaConfigStorage(); }, Upgrade);
+            return _instance;
+        }
+
+        public static void Save()
+        {
+            try
+            {
+                Save(Instance, USE_JSON, FILE_NAME, JSON_FILE_NAME);
+            }
+            catch (Exception e)
+            {
+                Logging.Instance.LogError(typeof(SeasonMetaConfigStorage), e);
+            }
+        }
 
         [XmlElement]
         public bool Enabled { get; set; } = true;
 
         [XmlElement]
         public string ActiveConfiguration { get; set; }
-
-        [XmlElement]
-        public string ActiveResult { get; set; }
 
         [XmlElement]
         public bool FirstLoad { get; set; } = true;
@@ -38,9 +82,6 @@ namespace SEDiscordBridge.Storage.SeasonMeta
 
         [XmlArray("Configurations"), XmlArrayItem("Configuration", typeof(SeasonMetaConfiguration))]
         public List<SeasonMetaConfiguration> Configurations { get; set; } = new List<SeasonMetaConfiguration>();
-
-        [XmlArray("Results"), XmlArrayItem("Result", typeof(SeasonMetaResult))]
-        public List<SeasonMetaResult> Results { get; set; } = new List<SeasonMetaResult>();
 
         public SeasonMetaConfiguration GetActiveConfiguration()
         {
@@ -83,66 +124,6 @@ namespace SEDiscordBridge.Storage.SeasonMeta
                 }
             }
             return null;
-        }
-
-        public SeasonMetaResult GetActiveResult()
-        {
-            return Results.FirstOrDefault(x => x.Id == ActiveResult);
-        }
-
-        public Dictionary<string, Vector2> GetActiveResultProgress()
-        {
-            var result = GetActiveResult();
-            if (result == null) return new Dictionary<string, Vector2>();
-            var configuration = GetActiveConfiguration();
-            if (configuration == null) return new Dictionary<string, Vector2>();
-            var progress = new Dictionary<string, Vector2>();
-            foreach (var entry in result.Entries)
-            {
-                var configEntry = configuration.Entries.FirstOrDefault(x => x.CategoryId == entry.CategoryId);
-                if (configEntry != null && configEntry.Amount > 0)
-                {
-                    progress[entry.CategoryId] = new Vector2((float)entry.Amount / configEntry.Amount, configEntry.Weight);
-                }
-                else
-                {
-                    progress[entry.CategoryId] = new Vector2(0f, 0f);
-                }
-            }
-            return progress;
-        }
-
-        public float GetCurrentProgress()
-        {
-            var progress = GetActiveResultProgress();
-            if (progress.Count == 0) return 0f;
-            var allValues = new List<float>();
-            foreach (var item in progress.Keys)
-            {
-                for (int i = 0; i < progress[item].Y; i++)
-                {
-                    allValues.Add(progress[item].X);
-                }
-            }
-            return allValues.Average();
-        }
-
-        public TimeSpan GetTimeToNextCheckpoint()
-        {
-            var configuration = GetActiveConfiguration();
-            var result = GetActiveResult();
-            var lastCheckpoint = (result.LastCheckpoint ?? result.SeasonStart).Value;
-            var nextCheckpoint = lastCheckpoint.AddHours(configuration.HoursBetweenCheckpoints);
-            return nextCheckpoint - DateTime.Now;
-        }
-
-        public TimeSpan GetTimeToNextSeason()
-        {
-            var configuration = GetActiveConfiguration();
-            var result = GetActiveResult();
-            var seasonStart = result.SeasonStart.Value;
-            var nextSeason = seasonStart.AddHours(configuration.HoursBetweenCheckpoints * configuration.TotalCheckpoints);
-            return nextSeason - DateTime.Now;
         }
 
         public SeasonMetaCategory GetCategoryById(string id)
@@ -251,21 +232,10 @@ namespace SEDiscordBridge.Storage.SeasonMeta
                     }).ToList()
                 };
                 Configurations.Add(configuration);
-                // Load a dummy result for testing
-                var result = new SeasonMetaResult()
-                {
-                    Id = "SEASON_META_RESULT_TEST",
-                    TargetConfiguration = configuration.Id,
-                    Entries = configuration.Entries.Select(x => new SeasonMetaEntry()
-                    {
-                        CategoryId = x.CategoryId,
-                        Amount = 0
-                    }).ToList()
-                };
-                Results.Add(result);
                 // Set active configuration and result
                 ActiveConfiguration = configuration.Id;
-                ActiveResult = result.Id;
+                // Load dummy result
+                SeasonMetaResultStorage.Instance.LoadInitialData(configuration);
             }
         }
 

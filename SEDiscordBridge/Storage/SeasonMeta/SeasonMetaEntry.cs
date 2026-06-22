@@ -3,14 +3,8 @@
 namespace SEDiscordBridge.Storage.SeasonMeta
 {
 
-    public class SeasonMetaEntry
+    public class SeasonMetaEntry : SeasonSimpleMetaEntry
     {
-
-        [XmlElement]
-        public string CategoryId { get; set; }
-
-        [XmlElement]
-        public long Amount { get; set; }
 
         [XmlElement]
         public int Weight { get; set; }

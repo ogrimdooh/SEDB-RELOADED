@@ -1,4 +1,7 @@
 ﻿using Newtonsoft.Json;
+using SEDiscordBridge.Storage.Bank;
+using SEDiscordBridge.Storage.Base;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Serialization;
@@ -6,16 +9,54 @@ using System.Xml.Serialization;
 namespace SEDiscordBridge.Storage.Profession
 {
 
-    public class ArkGridStorage
+    public class ProfessionStorage : BaseStorage
     {
 
-        [XmlElement]
-        public long EntityId { get; set; }
+        private const int CURRENT_VERSION = 1;
+        private const string FILE_NAME = "SEDB.Profession.Storage.xml";
+        private const string JSON_FILE_NAME = "SEDB.Profession.Storage.json";
+        private const bool USE_JSON = true;
 
-    }
+        private static ProfessionStorage _instance;
+        public static ProfessionStorage Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = Load();
+                return _instance;
+            }
+        }
 
-    public class ProfessionStorage
-    {
+        private static bool Validate(ProfessionStorage settings)
+        {
+            var res = true;
+            return res;
+        }
+
+        private static ProfessionStorage Upgrade(ProfessionStorage settings)
+        {
+
+            return settings;
+        }
+
+        public static ProfessionStorage Load()
+        {
+            _instance = Load(USE_JSON, FILE_NAME, JSON_FILE_NAME, CURRENT_VERSION, Validate, () => { return new ProfessionStorage(); }, Upgrade);
+            return _instance;
+        }
+
+        public static void Save()
+        {
+            try
+            {
+                Save(Instance, USE_JSON, FILE_NAME, JSON_FILE_NAME);
+            }
+            catch (Exception e)
+            {
+                Logging.Instance.LogError(typeof(ProfessionStorage), e);
+            }
+        }
 
         public class ProfessionBuff
         {
@@ -161,7 +202,7 @@ Vanguards receive combat conditioning, defensive training, and authorization for
 
         public static readonly ProfessionInfo PROSPECTOR_INFO = new ProfessionInfo()
         {
-            Id = KEY_VANGUARD_ID,
+            Id = KEY_PROSPECTOR_ID,
             Icon = ":pick:",
             Name = "Prospector",
             Description = @"Prospectors keep the Ark alive.
@@ -197,6 +238,9 @@ Without Prospectors, there is no next jump.",
         [XmlArray("ProfessionsMsgIds"), XmlArrayItem("MsgId", typeof(ProfessionChatEntryId))]
         public List<ProfessionChatEntryId> ProfessionsMsgIds { get; set; } = new List<ProfessionChatEntryId>();
 
+        [XmlArray("DiscordInfos"), XmlArrayItem("Info", typeof(ProfessionDiscordInfo))]
+        public List<ProfessionDiscordInfo> DiscordInfos { get; set; } = new List<ProfessionDiscordInfo>();
+
         public HashSet<ulong> GetAllMessagesIds()
         {
             var res = new HashSet<ulong>();
@@ -204,6 +248,18 @@ Without Prospectors, there is no next jump.",
                 res.Add(StartMsgId);
             res.UnionWith(ProfessionsMsgIds.Select(x => x.MsgId));
             return res;
+        }
+
+        public HashSet<ulong> GetOthersRolesIds(string professionId)
+        {
+            var res = new HashSet<ulong>();
+            res.UnionWith(DiscordInfos.Where(x => x.ProfessionId != professionId).Select(x => x.RoleId));
+            return res;
+        }
+
+        public ulong GetRolesId(string professionId)
+        {
+            return DiscordInfos.Where(x => x.ProfessionId == professionId).Select(x => x.RoleId).FirstOrDefault();
         }
 
     }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SEDiscordBridge.Storage.Base;
+using SEDiscordBridge.Storage.Profession;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -7,14 +9,63 @@ using System.Xml.Serialization;
 namespace SEDiscordBridge.Storage.Registry
 {
 
-    public class RegistryStorage
+    public class RegistryStorage : BaseStorage
     {
+
+        private const int CURRENT_VERSION = 1;
+        private const string FILE_NAME = "SEDB.Registry.Storage.xml";
+        private const string JSON_FILE_NAME = "SEDB.Registry.Storage.json";
+        private const bool USE_JSON = true;
+
+        private static RegistryStorage _instance;
+        public static RegistryStorage Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = Load();
+                return _instance;
+            }
+        }
+
+        private static bool Validate(RegistryStorage settings)
+        {
+            var res = true;
+            return res;
+        }
+
+        private static RegistryStorage Upgrade(RegistryStorage settings)
+        {
+
+            return settings;
+        }
+
+        public static RegistryStorage Load()
+        {
+            _instance = Load(USE_JSON, FILE_NAME, JSON_FILE_NAME, CURRENT_VERSION, Validate, () => { return new RegistryStorage(); }, Upgrade);
+            return _instance;
+        }
+
+        public static void Save()
+        {
+            try
+            {
+                Save(Instance, USE_JSON, FILE_NAME, JSON_FILE_NAME);
+            }
+            catch (Exception e)
+            {
+                Logging.Instance.LogError(typeof(RegistryStorage), e);
+            }
+        }
 
         [XmlElement]
         public bool Enabled { get; set; } = true;
 
         [XmlElement]
         public ulong StartMsgId { get; set; }
+
+        [XmlElement]
+        public ulong RoleId { get; set; }
 
         [XmlElement]
         public int TokenValidInMinutes { get; set; } = 5;

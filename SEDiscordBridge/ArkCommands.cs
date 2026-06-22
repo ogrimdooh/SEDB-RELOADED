@@ -33,8 +33,8 @@ namespace SEDiscordBridge
                     var target = Context.Player.Character?.Parent;
                     if (target != null && target is IMyCockpit cockpit)
                     {
-                        var needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.ArkGrid.EntityId;
-                        SEDBStorage.Instance.ArkGrid.EntityId = cockpit.CubeGrid.EntityId;
+                        var needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.FunctionalGrids.EntityId;
+                        SEDBStorage.Instance.FunctionalGrids.EntityId = cockpit.CubeGrid.EntityId;
                         Log.Info($"Ark interactive grid configure to {cockpit.CubeGrid.DisplayName} [{cockpit.CubeGrid.EntityId}]");
                         if (needReset)
                             ArkLogisticRelayController.Init();

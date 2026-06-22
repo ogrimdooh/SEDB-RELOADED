@@ -55,8 +55,8 @@ namespace SEDiscordBridge.Storage.SeasonMeta
             }
         }
 
-        [XmlArray("Entries"), XmlArrayItem("Entry", typeof(SeasonMetaEntry))]
-        public List<SeasonMetaEntry> Entries { get; set; } = new List<SeasonMetaEntry>();
+        [XmlArray("Entries"), XmlArrayItem("Entry", typeof(SeasonSimpleMetaEntry))]
+        public List<SeasonSimpleMetaEntry> Entries { get; set; } = new List<SeasonSimpleMetaEntry>();
 
         [XmlArray("Donations"), XmlArrayItem("Donation", typeof(SeasonMetaEntry))]
         public List<SeasonMetaDonationEntry> Donations { get; set; } = new List<SeasonMetaDonationEntry>();

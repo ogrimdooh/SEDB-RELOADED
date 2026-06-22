@@ -384,7 +384,7 @@ Press ENTER to confirm selection.",
             var validInventories = new Dictionary<MyInventory, Dictionary<MyDefinitionId, float>>();
             if (inventories.Any())
             {
-                var validIds = SEDBStorage.Instance.SeasonMeta.GetValidItensIds().Select(x => x.ToMyDefinitionId()).ToList();
+                var validIds = SEDBStorage.Instance.SeasonMetaConfig.GetValidItensIds().Select(x => x.ToMyDefinitionId()).ToList();
                 foreach (var inventory in inventories)
                 {
                     var validItens = inventory.GetItems().Where(x => validIds.Any(y => x.Content.TypeId == y.TypeId && x.Content.SubtypeId == y.SubtypeId))
@@ -489,10 +489,10 @@ Select cargo transfer scope:
                             var removedMass = removedAmount * GetItemMass(itemId);
                             finalAmount += removedAmount;
                             finalMass += removedMass;
-                            var categoryId = SEDBStorage.Instance.SeasonMeta.GetItemCategoryById(itemId);
-                            var categoryInfo = SEDBStorage.Instance.SeasonMeta.GetCategoryById(categoryId);
+                            var categoryId = SEDBStorage.Instance.SeasonMetaConfig.GetItemCategoryById(itemId);
+                            var categoryInfo = SEDBStorage.Instance.SeasonMetaConfig.GetCategoryById(categoryId);
                             var itemInfo = categoryInfo.GetItemById(itemId);
-                            SEDBStorage.Instance.SeasonMeta.GetActiveResult().AddValueToEntry(
+                            SEDBStorage.Instance.SeasonMetaResult.GetActiveResult().AddValueToEntry(
                                 categoryId, 
                                 (long)removedAmount,
                                 itemInfo.Weight
@@ -509,7 +509,7 @@ Select cargo transfer scope:
                         MassAmount = finalMass,
                         OperationDate = DateTime.Now
                     };
-                    SEDBStorage.Instance.SeasonMeta.GetActiveResult().Donations.Add(donation);
+                    SEDBStorage.Instance.SeasonMetaResult.GetActiveResult().Donations.Add(donation);
                     SEDiscordBridgePlugin.Static.AlertDonationIsCompleted(donation.SteamId, donation.ItemCount, donation.MassAmount);
                     return true;
                 }
@@ -825,7 +825,7 @@ Thank you for supporting the next jump.
         private static bool _initialized = false;
         public static void Init()
         {
-            if (SEDBStorage.Instance.ArkGrid.EntityId == 0)
+            if (SEDBStorage.Instance.FunctionalGrids.EntityId == 0)
             {
                 Logging.Instance.LogWarning(typeof(ArkLogisticRelayController), "ArkGrid EntityId not defined!");
                 return;
@@ -837,10 +837,10 @@ Thank you for supporting the next jump.
                 _initialized = false;
             }
 
-            ARKGRID = MyEntities.GetEntityById(SEDBStorage.Instance.ArkGrid.EntityId) as MyCubeGrid;
+            ARKGRID = MyEntities.GetEntityById(SEDBStorage.Instance.FunctionalGrids.EntityId) as MyCubeGrid;
             if (ARKGRID == null)
             {
-                Logging.Instance.LogWarning(typeof(ArkLogisticRelayController), $"ArkGrid EntityId={SEDBStorage.Instance.ArkGrid.EntityId} not valid!");
+                Logging.Instance.LogWarning(typeof(ArkLogisticRelayController), $"ArkGrid EntityId={SEDBStorage.Instance.FunctionalGrids.EntityId} not valid!");
                 return;
             }
 

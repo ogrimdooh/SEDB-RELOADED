@@ -305,7 +305,9 @@
     <Compile Include="Storage\Player\PlayerStorage.cs" />
     <Compile Include="Storage\Player\PlayerStorageValue.cs" />
     <Compile Include="Storage\Profession\ProfessionChatEntryId.cs" />
+    <Compile Include="Storage\Profession\ProfessionDiscordInfo.cs" />
     <Compile Include="Storage\Profession\ProfessionStorage.cs" />
+    <Compile Include="Storage\FunctionalGrids\ServerFunctionalGridsStorage.cs" />
     <Compile Include="Storage\Registry\RegistredUserInfo.cs" />
     <Compile Include="Storage\Registry\RegistryStorage.cs" />
     <Compile Include="Storage\Registry\RegistryTokenData.cs" />
@@ -318,7 +320,9 @@
     <Compile Include="Storage\SeasonMeta\SeasonMetaEntry.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaEntryType.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaResult.cs" />
-    <Compile Include="Storage\SeasonMeta\SeasonMetaStorage.cs" />
+    <Compile Include="Storage\SeasonMeta\SeasonMetaResultStorage.cs" />
+    <Compile Include="Storage\SeasonMeta\SeasonMetaConfigStorage.cs" />
+    <Compile Include="Storage\SeasonMeta\SeasonSimpleMetaEntry.cs" />
     <Compile Include="Storage\SEDBStorage.cs" />
     <Compile Include="Storage\Base\StorageDefinitionId.cs" />
     <Compile Include="Utilities.cs" />

@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web.Security;
+using System.Windows.Interop;
 using Torch.API.Managers;
 using Torch.API.Session;
 using Torch.Commands;
@@ -257,6 +259,58 @@ namespace SEDiscordBridge
                     if (member != null)
                     {
                         await member.SendMessageAsync(msg);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                SEDiscordBridgePlugin.Log.Error(e);
+            }
+        }
+
+        public async Task AddRoleToUser(ulong userId, params ulong[] roleIds)
+        {
+            try
+            {
+                Logging.Instance.LogInfo(GetType(), $"Starting to add user {userId} some roles ({string.Join(",", roleIds)})");
+                var guild = await GetServerGuild();
+                if (guild != null)
+                {
+                    var roles = roleIds.Select(x => guild.GetRole(x));
+                    var member = await guild.GetMemberAsync(userId);
+                    if (member != null && roles.Any())
+                    {
+                        Logging.Instance.LogInfo(GetType(), $"User and roles found!");
+                        foreach (var roleToAdd in roles)
+                        {
+                            await member.GrantRoleAsync(roleToAdd);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                SEDiscordBridgePlugin.Log.Error(e);
+            }
+        }
+
+        public async Task RemoveRoleToUser(ulong userId, params ulong[] roleIds)
+        {
+            try
+            {
+                Logging.Instance.LogInfo(GetType(), $"Starting to remove user {userId} from roles ({string.Join(",", roleIds)})");
+                var guild = await GetServerGuild();
+                if (guild != null)
+                {
+                    var roles = roleIds.Select(x => guild.GetRole(x));
+                    var member = await guild.GetMemberAsync(userId);
+                    if (member != null && roles.Any())
+                    {
+                        Logging.Instance.LogInfo(GetType(), $"User and roles found!");
+                        foreach (var roleToRemove in roles)
+                        {
+                            await member.RevokeRoleAsync(roleToRemove);
+                        }
                     }
                 }
             }
