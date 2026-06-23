@@ -6,6 +6,7 @@ using Sandbox.Game.Multiplayer;
 using Sandbox.Game.Screens.Helpers;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers.Grids;
 using SEDiscordBridge.Entities.Base;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
@@ -109,16 +110,16 @@ namespace SEDiscordBridge
                                                             var pInv = parachute.GetInventory();
                                                             if (pInv != null)
                                                             {
-                                                                var canvasAmount = pInv.GetItemAmount(CANVAS_ID.DefinitionId);
+                                                                var canvasAmount = pInv.GetItemAmount(ItensConstants.CANVAS_ID.DefinitionId);
                                                                 if (canvasAmount == 0)
                                                                 {
                                                                     if (cubeGrid.GridSizeEnum == MyCubeSize.Large)
                                                                     {
-                                                                        pInv.AddItems(5, GetPhysicalObjectBuilder(CANVAS_ID));
+                                                                        pInv.AddItems(5, GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
                                                                     }
                                                                     else
                                                                     {
-                                                                        pInv.AddItems(1, GetPhysicalObjectBuilder(CANVAS_ID));
+                                                                        pInv.AddItems(1, GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
                                                                     }
                                                                 }
                                                             }
@@ -131,7 +132,7 @@ namespace SEDiscordBridge
                                                         if (mainCargo != null)
                                                         {
                                                             var cInv = mainCargo.GetInventory();
-                                                            cInv.AddItems(5, GetPhysicalObjectBuilder(CANVAS_ID));
+                                                            cInv.AddItems(5, GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
                                                             // TODO: Add all extra items in this position
                                                         }
                                                     }
@@ -196,48 +197,32 @@ namespace SEDiscordBridge
 
         }
 
-        public const string CANVAS_SUBTYPEID = "Canvas";
-        public static readonly UniqueEntityId CANVAS_ID = new UniqueEntityId(typeof(MyObjectBuilder_Component), CANVAS_SUBTYPEID);
-
-        public const string DAWNDROPSIGNALEXPLORER_SUBTYPEID = "DAWNDropSignalExplorer";
-        public static readonly UniqueEntityId DAWNDROPSIGNALEXPLORER_ID = new UniqueEntityId(typeof(MyObjectBuilder_ConsumableItem), DAWNDROPSIGNALEXPLORER_SUBTYPEID);
-
-        public const string DAWNDROPSIGNALLITE_SUBTYPEID = "DAWNDropSignalLite";
-        public static readonly UniqueEntityId DAWNDROPSIGNALLITE_ID = new UniqueEntityId(typeof(MyObjectBuilder_ConsumableItem), DAWNDROPSIGNALLITE_SUBTYPEID);
-
-        public const string DAWNDROPSIGNALSURVIVAL_SUBTYPEID = "DAWNDropSignalSurvival";
-        public static readonly UniqueEntityId DAWNDROPSIGNALSURVIVAL_ID = new UniqueEntityId(typeof(MyObjectBuilder_ConsumableItem), DAWNDROPSIGNALSURVIVAL_SUBTYPEID);
-
-        public const string AK1EXPLORERROVER_SUBTYPEID = "AK1ExplorerRover";
-        public const string AK2CARGOROVER_SUBTYPEID = "AK2CargoRover";
-        public const string AK3DROPPOD_SUBTYPEID = "AK3DropPod";
-
         public static DropSignalConsumableHandler DAWNDROPSIGNALEXPLORER_HANDLER = new DropSignalConsumableHandler()
         {
-            Id = DAWNDROPSIGNALEXPLORER_ID,
-            PrefabName = AK1EXPLORERROVER_SUBTYPEID,
+            Id = ItensConstants.DAWNDROPSIGNALEXPLORER_ID,
+            PrefabName = EconomicsConstants.AK1EXPLORERROVER_SUBTYPEID,
             DisplayName = "AK-1 Explorer Rover"
         };
 
         public static DropSignalConsumableHandler DAWNDROPSIGNALLITE_HANDLER = new DropSignalConsumableHandler()
         {
-            Id = DAWNDROPSIGNALLITE_ID,
-            PrefabName = AK2CARGOROVER_SUBTYPEID,
+            Id = ItensConstants.DAWNDROPSIGNALLITE_ID,
+            PrefabName = EconomicsConstants.AK2CARGOROVER_SUBTYPEID,
             DisplayName = "AK-2 Cargo Rover"
         };
 
         public static DropSignalConsumableHandler DAWNDROPSIGNALSURVIVAL_HANDLER = new DropSignalConsumableHandler()
         {
-            Id = DAWNDROPSIGNALSURVIVAL_ID,
-            PrefabName = AK3DROPPOD_SUBTYPEID,
+            Id = ItensConstants.DAWNDROPSIGNALSURVIVAL_ID,
+            PrefabName = EconomicsConstants.AK3DROPPOD_SUBTYPEID,
             DisplayName = "AK-3 Drop Pod"
         };
 
         public static readonly Dictionary<UniqueEntityId, ServerConsumableHandler> CONSUMABLE_HANDLERS = new Dictionary<UniqueEntityId, ServerConsumableHandler>()
         {
-            { DAWNDROPSIGNALEXPLORER_ID, DAWNDROPSIGNALEXPLORER_HANDLER },
-            { DAWNDROPSIGNALLITE_ID, DAWNDROPSIGNALLITE_HANDLER },
-            { DAWNDROPSIGNALSURVIVAL_ID, DAWNDROPSIGNALSURVIVAL_HANDLER }
+            { ItensConstants.DAWNDROPSIGNALEXPLORER_ID, DAWNDROPSIGNALEXPLORER_HANDLER },
+            { ItensConstants.DAWNDROPSIGNALLITE_ID, DAWNDROPSIGNALLITE_HANDLER },
+            { ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, DAWNDROPSIGNALSURVIVAL_HANDLER }
         };
 
         private static ConcurrentDictionary<UniqueEntityId, MyObjectBuilder_Base> BUILDERS_CACHE = new ConcurrentDictionary<UniqueEntityId, MyObjectBuilder_Base>();

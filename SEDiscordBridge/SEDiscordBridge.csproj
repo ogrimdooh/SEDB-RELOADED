@@ -280,6 +280,8 @@
     <Compile Include="Controllers\Grids\ArkLogisticRelayController.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="Controllers\Grids\BaseFunctionalGridController.cs" />
+    <Compile Include="Controllers\Grids\EconomicsConstants.cs" />
+    <Compile Include="Controllers\Grids\ItensConstants.cs" />
     <Compile Include="Entities\Base\HashCode.cs" />
     <Compile Include="Entities\Base\UId.cs" />
     <Compile Include="Entities\Base\UInt128.cs" />
@@ -289,6 +291,7 @@
     <Compile Include="Entities\Base\UniqueNameId.cs" />
     <Compile Include="Entities\Base\UniqueNameIdExtension.cs" />
     <Compile Include="Entities\Command.cs" />
+    <Compile Include="Extensions\FlagsUtils.cs" />
     <Compile Include="Extensions\IMyCharacterExtensions.cs" />
     <Compile Include="Extensions\IMyPlayerExtensions.cs" />
     <Compile Include="Extensions\MyDamageInformationExtensions.cs" />

@@ -512,6 +512,7 @@ namespace SEDiscordBridge
                     Logging.Instance.LogWarning(typeof(GameWatcherController), "DDBridge not found when Session Ready!");
                 }
                 ArkLogisticRelayController.Init();
+                EconomicsConstants.DoCalcAllItensInfo();
             }
             catch (Exception e)
             {
