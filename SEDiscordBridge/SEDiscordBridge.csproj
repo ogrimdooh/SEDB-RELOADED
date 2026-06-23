@@ -276,8 +276,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArkCommands.cs" />
-    <Compile Include="ArkLogisticRelayController.cs" />
+    <Compile Include="Controllers\Grids\ArkGroundBaseController.cs" />
+    <Compile Include="Controllers\Grids\ArkLogisticRelayController.cs" />
     <Compile Include="Commands.cs" />
+    <Compile Include="Controllers\Grids\BaseFunctionalGridController.cs" />
     <Compile Include="Entities\Base\HashCode.cs" />
     <Compile Include="Entities\Base\UId.cs" />
     <Compile Include="Entities\Base\UInt128.cs" />

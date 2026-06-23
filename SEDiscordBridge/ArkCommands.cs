@@ -2,6 +2,7 @@ using NLog;
 using Sandbox.Game.GameSystems.BankingAndCurrency;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers.Grids;
 using SEDiscordBridge.Storage;
 using Torch.Commands;
 using Torch.Commands.Permissions;
@@ -18,7 +19,7 @@ namespace SEDiscordBridge
 
         [Command("grid", "Manage the ark grid")]
         [Permission(MyPromoteLevel.Admin)]
-        public void Grid(string operation)
+        public void Grid(string operation, string entry = null)
         {
             if (string.IsNullOrWhiteSpace(operation))
             {
@@ -26,18 +27,38 @@ namespace SEDiscordBridge
                 return;
             }
             operation = operation.ToLower().Trim();
-
+            entry = entry.ToLower().Trim();
             switch (operation)
             {
                 case "set":
                     var target = Context.Player.Character?.Parent;
                     if (target != null && target is IMyCockpit cockpit)
                     {
-                        var needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.FunctionalGrids.EntityId;
-                        SEDBStorage.Instance.FunctionalGrids.EntityId = cockpit.CubeGrid.EntityId;
-                        Log.Info($"Ark interactive grid configure to {cockpit.CubeGrid.DisplayName} [{cockpit.CubeGrid.EntityId}]");
+                        var needReset = false;
+                        switch (entry)
+                        {
+                            case "logistic_relay":
+                                needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.FunctionalGrids.LogisticRelayEntityId;
+                                SEDBStorage.Instance.FunctionalGrids.LogisticRelayEntityId = cockpit.CubeGrid.EntityId;
+                                break;
+                            case "ground_base":
+                                needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.FunctionalGrids.GroundBaseEntityId;
+                                SEDBStorage.Instance.FunctionalGrids.GroundBaseEntityId = cockpit.CubeGrid.EntityId;
+                                break;
+                        }
+                        Log.Info($"Ark interactive grid for '{entry}' configure to {cockpit.CubeGrid.DisplayName} [{cockpit.CubeGrid.EntityId}]");
                         if (needReset)
-                            ArkLogisticRelayController.Init();
+                        {
+                            switch (entry)
+                            {
+                                case "logistic_relay":
+                                    ArkLogisticRelayController.Init();
+                                    break;
+                                case "ground_base":
+                                    ArkGroundBaseController.Init();
+                                    break;
+                            }
+                        }
                     }
                     else
                     {
@@ -46,8 +67,7 @@ namespace SEDiscordBridge
                     break;
                 case "reset":
                     ArkLogisticRelayController.Init();
-                    break;
-                default:
+                    ArkGroundBaseController.Init();
                     break;
             }
 

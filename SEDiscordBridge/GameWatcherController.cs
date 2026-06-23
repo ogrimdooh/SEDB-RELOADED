@@ -7,6 +7,7 @@ using Sandbox.Game.GameSystems;
 using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers.Grids;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
 using SEDiscordBridge.Storage.Player;
@@ -473,6 +474,7 @@ namespace SEDiscordBridge
         {
             SEDBStorage.Save();
             ArkLogisticRelayController.Dispose();
+            ArkGroundBaseController.Dispose();
         }
 
         private static bool canRun;

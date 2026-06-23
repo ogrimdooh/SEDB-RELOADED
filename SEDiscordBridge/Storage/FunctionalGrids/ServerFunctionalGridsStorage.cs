@@ -56,7 +56,10 @@ namespace SEDiscordBridge.Storage.FunctionalGrids
         }
 
         [XmlElement]
-        public long EntityId { get; set; }
+        public long LogisticRelayEntityId { get; set; }
+
+        [XmlElement]
+        public long GroundBaseEntityId { get; set; }
 
     }
 
