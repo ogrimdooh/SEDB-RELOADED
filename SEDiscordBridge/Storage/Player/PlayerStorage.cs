@@ -22,6 +22,7 @@ namespace SEDiscordBridge.Storage.Player
         public const string KEY_KILL_COUNT = "KILL_COUNT";
 
         public const string KEY_PROFESSION = "PROFESSION";
+        public const string KEY_LAST_RESPAWN_GRID = "LAST_RESPAWN_GRID";
 
         [XmlElement]
         public ulong SteamId { get; set; }

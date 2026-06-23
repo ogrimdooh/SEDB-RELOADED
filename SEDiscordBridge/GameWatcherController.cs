@@ -85,6 +85,7 @@ namespace SEDiscordBridge
             MyEntities.OnEntityAdd += Entities_OnEntityAdd;
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to MyEntities OnEntityRemove");
             MyEntities.OnEntityRemove += Entities_OnEntityRemove;
+            ServerConsumablesController.Init();
             _initialized = true;
         }
 
@@ -170,11 +171,17 @@ namespace SEDiscordBridge
         }
 
         public static ConcurrentDictionary<long, MyPlanet> Planets { get; private set; } = new ConcurrentDictionary<long, MyPlanet>();
+        public static ConcurrentDictionary<long, MySafeZone> SafeZones { get; private set; } = new ConcurrentDictionary<long, MySafeZone>();
         public static ConcurrentDictionary<MyPlayer.PlayerId, MyPlayer> Players { get; private set; } = new ConcurrentDictionary<MyPlayer.PlayerId, MyPlayer>();
 
         public static MyPlanet GetPlanetAtRange(Vector3D position)
         {
             return Planets.Values.OrderBy(x => Vector3D.Distance(position, x.PositionComp.GetPosition())).FirstOrDefault();
+        }
+
+        public static bool IsOnSafeZone(Vector3D position)
+        {
+            return SafeZones.Values.Any(x => x.Contains(position));
         }
 
         private static void Players_PlayerConnected(MyPlayer.PlayerId id)
@@ -223,6 +230,15 @@ namespace SEDiscordBridge
                     }
                     return;
                 }
+                var safeZone = entity as MySafeZone;
+                if (safeZone != null)
+                {
+                    lock (SafeZones)
+                    {
+                        SafeZones[safeZone.EntityId] = safeZone;
+                    }
+                    return;
+                }
             }
             catch (Exception e)
             {
@@ -232,6 +248,8 @@ namespace SEDiscordBridge
 
         private static void CheckOnPlayerGravityMessages(MyPlayer.PlayerId playerId, MyCharacter character)
         {
+
+            if (character == null) return;
 
             if (!SEDiscordBridgePlugin.Static.Config.DisplayGridsGravityMessages) return;
 
@@ -430,6 +448,15 @@ namespace SEDiscordBridge
                     }
                     return;
                 }
+                var safeZone = entity as MySafeZone;
+                if (safeZone != null && SafeZones.ContainsKey(safeZone.EntityId))
+                {
+                    lock (SafeZones)
+                    {
+                        SafeZones.Remove(safeZone.EntityId);
+                    }
+                    return;
+                }
             }
             catch (Exception e)
             {
@@ -597,6 +624,7 @@ namespace SEDiscordBridge
             }
             MyEntities.OnEntityAdd -= Entities_OnEntityAdd;
             MyEntities.OnEntityRemove -= Entities_OnEntityRemove;
+            ServerConsumablesController.Dispose();
         }
 
         private static bool IsFactionChangeValidToMsg(MyFactionStateChange action, out int msgType)

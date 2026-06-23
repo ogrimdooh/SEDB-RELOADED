@@ -346,6 +346,10 @@ namespace SEDiscordBridge
         public string RespawnMessage { get => _respawnMessage; set => SetValue(ref _respawnMessage, value); }
 
         [XmlIgnore]
+        public string _callDropMessage = ":parachute: The player {p} has call a drop dignal for {g}.";
+        public string CallDropMessage { get => _callDropMessage; set => SetValue(ref _callDropMessage, value); }
+
+        [XmlIgnore]
         public bool _displayDieMessages = true;
         public bool DisplayDieMessages { get => _displayDieMessages; set => SetValue(ref _displayDieMessages, value); }
 

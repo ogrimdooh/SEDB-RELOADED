@@ -278,6 +278,14 @@
     <Compile Include="ArkCommands.cs" />
     <Compile Include="ArkLogisticRelayController.cs" />
     <Compile Include="Commands.cs" />
+    <Compile Include="Entities\Base\HashCode.cs" />
+    <Compile Include="Entities\Base\UId.cs" />
+    <Compile Include="Entities\Base\UInt128.cs" />
+    <Compile Include="Entities\Base\UInt128Extension.cs" />
+    <Compile Include="Entities\Base\UniqueEntityId.cs" />
+    <Compile Include="Entities\Base\UniqueEntityIdExtension.cs" />
+    <Compile Include="Entities\Base\UniqueNameId.cs" />
+    <Compile Include="Entities\Base\UniqueNameIdExtension.cs" />
     <Compile Include="Entities\Command.cs" />
     <Compile Include="Extensions\IMyCharacterExtensions.cs" />
     <Compile Include="Extensions\IMyPlayerExtensions.cs" />
@@ -297,6 +305,7 @@
     <Compile Include="DiscordBridge.cs" />
     <Compile Include="SEDBPatch.cs" />
     <Compile Include="SEDiscordBridgePlugin.cs" />
+    <Compile Include="ServerConsumablesController.cs" />
     <Compile Include="Storage\Bank\BankAccount.cs" />
     <Compile Include="Storage\Bank\BankStorage.cs" />
     <Compile Include="Storage\Bank\BankTransaction.cs" />
