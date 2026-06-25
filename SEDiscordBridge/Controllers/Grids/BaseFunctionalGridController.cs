@@ -5,6 +5,8 @@ using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers.Economics;
+using SEDiscordBridge.Controllers.Types;
 using SEDiscordBridge.Patches;
 using SpaceEngineers.Game.Entities.Blocks;
 using System;
@@ -607,6 +609,7 @@ Press ENTER to confirm selection.",
         protected IMyGridTerminalSystem ARKGRIDTERMINALSYSTEM;
 
         protected MyStoreBlock ARKGRIDSTOREBLOCK;
+        protected MyCargoContainer ARKGRIDSTORECARGOBLOCK;
         protected MyContractBlock ARKGRIDCONTRACTBLOCK;
 
         protected ConcurrentDictionary<int, IArkTerminalBocks> ARKGRIDTERMINALS = new ConcurrentDictionary<int, IArkTerminalBocks>();
@@ -619,6 +622,9 @@ Press ENTER to confirm selection.",
         protected ParallelTasks.Task task;
 
         protected abstract long GetTargetGridId();
+        protected abstract StationType GetStationType();
+        protected abstract StationLevel GetStationLevel();
+        protected abstract FactionType GetFactionType();
 
         protected abstract IArkTerminalBocks CreateNewTerminalBlock(string name);
 
@@ -649,10 +655,35 @@ Press ENTER to confirm selection.",
                 return;
             }
 
+            if (FactionsController.ChangeGridOwnerToMainFaction(ARKGRID))
+            {
+                Logging.Instance.LogInfo(GetType(), $"ArkGrid EntityId={GetTargetGridId()} ownership changed to faction {FactionsController.FACTION_2DAWN.Tag}");
+            }
+
             ARKGRIDTERMINALSYSTEM = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(ARKGRID);
 
-            ARKGRIDSTOREBLOCK = ARKGRID.GetFatBlocks<MyStoreBlock>().FirstOrDefault();
+            var storeGroup = ARKGRIDTERMINALSYSTEM.GetBlockGroupWithName("ARK-STORE");
+            if (storeGroup != null)
+            {
+                var storeBlocks = new List<IMyTerminalBlock>();
+                storeGroup.GetBlocksOfType<MyStoreBlock>(storeBlocks);
+                var cargoBlocks = new List<IMyTerminalBlock>();
+                storeGroup.GetBlocksOfType<MyCargoContainer>(cargoBlocks);
+                if (storeBlocks.Any() && cargoBlocks.Any())
+                {
+                    ARKGRIDSTOREBLOCK = storeBlocks.First() as MyStoreBlock;
+                    Logging.Instance.LogInfo(GetType(), $"ArkGrid StoreBlock found and loaded: {ARKGRIDSTOREBLOCK.EntityId}");
+                    ARKGRIDSTORECARGOBLOCK = cargoBlocks.First() as MyCargoContainer;
+                    Logging.Instance.LogInfo(GetType(), $"ArkGrid Store CargoBlock found and loaded: {ARKGRIDSTORECARGOBLOCK.EntityId}");
+                    EconomicsConstants.LoadStoreBlock(ARKGRIDSTOREBLOCK, ARKGRIDSTORECARGOBLOCK);
+                }
+            }
+
             ARKGRIDCONTRACTBLOCK = ARKGRID.GetFatBlocks<MyContractBlock>().FirstOrDefault();
+            if (ARKGRIDCONTRACTBLOCK != null)
+            {
+                EconomicsConstants.LoadContractBlock(ARKGRIDCONTRACTBLOCK, GetStationType(), GetStationLevel(), GetFactionType());
+            }
 
             foreach (var item in ARKGRID.GetFatBlocks<MyShipConnector>())
             {

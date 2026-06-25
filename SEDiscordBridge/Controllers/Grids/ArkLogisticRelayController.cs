@@ -2,6 +2,7 @@
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers.Types;
 using SEDiscordBridge.Storage;
 using SEDiscordBridge.Storage.FunctionalGrids;
 using SEDiscordBridge.Storage.SeasonMeta;
@@ -75,6 +76,21 @@ and added to the current Ark Jump objectives.
         protected override long GetTargetGridId()
         {
             return ServerFunctionalGridsStorage.Instance.LogisticRelayEntityId;
+        }
+
+        protected override StationType GetStationType()
+        {
+            return StationType.OrbitalStation;
+        }
+
+        protected override StationLevel GetStationLevel()
+        {
+            return StationLevel.Large;
+        }
+
+        protected override FactionType GetFactionType()
+        {
+            return FactionType.All;
         }
 
         protected override void LoadServices()

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using VRage.Game;
 using System.Linq;
 using SEDiscordBridge.Patches;
+using static SEDiscordBridge.Controllers.ItemPriceController;
+using SEDiscordBridge.Controllers.Types;
 
 namespace SEDiscordBridge.Storage.SeasonMeta
 {
@@ -17,6 +19,9 @@ namespace SEDiscordBridge.Storage.SeasonMeta
 
         [XmlElement]
         public SeasonMetaEntryType Type { get; set; }
+
+        [XmlElement]
+        public ItemRarity Rarity { get; set; }
 
         [XmlArray("Items"), XmlArrayItem("Item", typeof(SeasonMetaCategoryValidItem))]
         public List<SeasonMetaCategoryValidItem> Items { get; set; } = new List<SeasonMetaCategoryValidItem>();

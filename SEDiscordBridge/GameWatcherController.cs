@@ -7,9 +7,12 @@ using Sandbox.Game.GameSystems;
 using Sandbox.Game.SessionComponents;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers;
+using SEDiscordBridge.Controllers.Economics;
 using SEDiscordBridge.Controllers.Grids;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
+using SEDiscordBridge.Storage.FunctionalGrids;
 using SEDiscordBridge.Storage.Player;
 using System;
 using System.Collections.Concurrent;
@@ -19,6 +22,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Torch.Commands;
+using VRage.Game;
 using VRage.Game.Definitions.SessionComponents;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
@@ -52,6 +56,14 @@ namespace SEDiscordBridge
             MyVisualScriptLogicProvider.PlayerDied += MyPlayer_Die;
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to RespawnShipSpawned");
             MyVisualScriptLogicProvider.RespawnShipSpawned += MyEntities_RespawnShipSpawned;
+            Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to ContractAccepted");
+            MyVisualScriptLogicProvider.ContractAccepted += ContractAccepted;
+            Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to ContractFinished");
+            MyVisualScriptLogicProvider.ContractFinished += ContractFinished;
+            Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to ContractFailed");
+            MyVisualScriptLogicProvider.ContractFailed += ContractFailed;
+            Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to ContractAbandoned");
+            MyVisualScriptLogicProvider.ContractAbandoned += ContractAbandoned;
             if (MySession.Static != null)
             {
                 Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to MySession OnReady");
@@ -88,6 +100,26 @@ namespace SEDiscordBridge
             MyEntities.OnEntityRemove += Entities_OnEntityRemove;
             ServerConsumablesController.Init();
             _initialized = true;
+        }
+
+        private static void ContractAccepted(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
+        {
+
+        }
+
+        private static void ContractFinished(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
+        {
+
+        }
+
+        private static void ContractFailed(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId, bool IsAbandon)
+        {
+
+        }
+
+        private static void ContractAbandoned(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
+        {
+
         }
 
         private static void ServerUpdateMsgHandler(ushort netId, byte[] data, ulong steamId, bool fromServer)
@@ -511,8 +543,11 @@ namespace SEDiscordBridge
                 {
                     Logging.Instance.LogWarning(typeof(GameWatcherController), "DDBridge not found when Session Ready!");
                 }
+                FactionsController.ResetMainFactionBank();
+                EconomicsConstants.Init();
+                ItemPriceController.Init();
                 ArkLogisticRelayController.Init();
-                EconomicsConstants.DoCalcAllItensInfo();
+                ArkGroundBaseController.Init();
             }
             catch (Exception e)
             {
@@ -604,6 +639,10 @@ namespace SEDiscordBridge
             }
             MyVisualScriptLogicProvider.PlayerDied -= MyPlayer_Die;
             MyVisualScriptLogicProvider.RespawnShipSpawned -= MyEntities_RespawnShipSpawned;
+            MyVisualScriptLogicProvider.ContractAccepted -= ContractAccepted;
+            MyVisualScriptLogicProvider.ContractFinished -= ContractFinished;
+            MyVisualScriptLogicProvider.ContractFailed -= ContractFailed;
+            MyVisualScriptLogicProvider.ContractAbandoned -= ContractAbandoned;
             if (MySession.Static != null)
             {
                 MySession.Static.OnReady -= Static_OnReady;

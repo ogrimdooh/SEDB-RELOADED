@@ -276,12 +276,28 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArkCommands.cs" />
+    <Compile Include="Controllers\Economics\ContractSystemOverriding.cs" />
+    <Compile Include="Controllers\Economics\EconomyOverriding.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_Base.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_TypeAcquisitionStrategy.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_TypeRepairStrategy.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_TypeSearchStrategy.cs" />
+    <Compile Include="Controllers\FactionsController.cs" />
+    <Compile Include="Controllers\PrefabPriceController.cs" />
+    <Compile Include="Controllers\Types\FactionType.cs" />
     <Compile Include="Controllers\Grids\ArkGroundBaseController.cs" />
     <Compile Include="Controllers\Grids\ArkLogisticRelayController.cs" />
     <Compile Include="Commands.cs" />
     <Compile Include="Controllers\Grids\BaseFunctionalGridController.cs" />
-    <Compile Include="Controllers\Grids\EconomicsConstants.cs" />
-    <Compile Include="Controllers\Grids\ItensConstants.cs" />
+    <Compile Include="Controllers\Economics\EconomicsConstants.cs" />
+    <Compile Include="Controllers\ItemPriceController.cs" />
+    <Compile Include="Controllers\Types\ItemRarity.cs" />
+    <Compile Include="Controllers\ItensConstants.cs" />
+    <Compile Include="Controllers\Types\OreRarity.cs" />
+    <Compile Include="Controllers\Types\StationLevel.cs" />
+    <Compile Include="Controllers\Types\StationPrefabCategory.cs" />
+    <Compile Include="Controllers\Types\StationPrefabFlag.cs" />
+    <Compile Include="Controllers\Types\StationType.cs" />
     <Compile Include="Entities\Base\HashCode.cs" />
     <Compile Include="Entities\Base\UId.cs" />
     <Compile Include="Entities\Base\UInt128.cs" />
@@ -294,7 +310,10 @@
     <Compile Include="Extensions\FlagsUtils.cs" />
     <Compile Include="Extensions\IMyCharacterExtensions.cs" />
     <Compile Include="Extensions\IMyPlayerExtensions.cs" />
+    <Compile Include="Extensions\InventoryUtils.cs" />
     <Compile Include="Extensions\MyDamageInformationExtensions.cs" />
+    <Compile Include="Extensions\ObjectBuilderExtensions.cs" />
+    <Compile Include="Extensions\VectorUtils.cs" />
     <Compile Include="GameWatcherController.cs" />
     <Compile Include="Logging.cs" />
     <Compile Include="MsgWorker.cs" />

@@ -1,4 +1,5 @@
-﻿using SEDiscordBridge.Storage.FunctionalGrids;
+﻿using SEDiscordBridge.Controllers.Types;
+using SEDiscordBridge.Storage.FunctionalGrids;
 
 namespace SEDiscordBridge.Controllers.Grids
 {
@@ -30,6 +31,21 @@ namespace SEDiscordBridge.Controllers.Grids
         protected override long GetTargetGridId()
         {
             return ServerFunctionalGridsStorage.Instance.GroundBaseEntityId;
+        }
+
+        protected override StationType GetStationType()
+        {
+            return StationType.PlanetStation;
+        }
+
+        protected override StationLevel GetStationLevel()
+        {
+            return StationLevel.Large;
+        }
+
+        protected override FactionType GetFactionType()
+        {
+            return FactionType.All;
         }
 
         protected override void LoadServices()

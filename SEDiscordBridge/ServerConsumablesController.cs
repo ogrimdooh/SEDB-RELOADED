@@ -6,7 +6,8 @@ using Sandbox.Game.Multiplayer;
 using Sandbox.Game.Screens.Helpers;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
-using SEDiscordBridge.Controllers.Grids;
+using SEDiscordBridge.Controllers;
+using SEDiscordBridge.Controllers.Economics;
 using SEDiscordBridge.Entities.Base;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
@@ -115,11 +116,11 @@ namespace SEDiscordBridge
                                                                 {
                                                                     if (cubeGrid.GridSizeEnum == MyCubeSize.Large)
                                                                     {
-                                                                        pInv.AddItems(5, GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
+                                                                        pInv.AddItems(5, ItensConstants.GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
                                                                     }
                                                                     else
                                                                     {
-                                                                        pInv.AddItems(1, GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
+                                                                        pInv.AddItems(1, ItensConstants.GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
                                                                     }
                                                                 }
                                                             }
@@ -132,7 +133,7 @@ namespace SEDiscordBridge
                                                         if (mainCargo != null)
                                                         {
                                                             var cInv = mainCargo.GetInventory();
-                                                            cInv.AddItems(5, GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
+                                                            cInv.AddItems(5, ItensConstants.GetPhysicalObjectBuilder(ItensConstants.CANVAS_ID));
                                                             // TODO: Add all extra items in this position
                                                         }
                                                     }
@@ -225,22 +226,6 @@ namespace SEDiscordBridge
             { ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, DAWNDROPSIGNALSURVIVAL_HANDLER }
         };
 
-        private static ConcurrentDictionary<UniqueEntityId, MyObjectBuilder_Base> BUILDERS_CACHE = new ConcurrentDictionary<UniqueEntityId, MyObjectBuilder_Base>();
-
-        public static T GetBuilder<T>(UniqueEntityId id, bool cache = true) where T : MyObjectBuilder_Base
-        {
-            if (cache && BUILDERS_CACHE.ContainsKey(id))
-                return BUILDERS_CACHE[id] as T;
-            var builder = MyObjectBuilderSerializer.CreateNewObject(id.DefinitionId) as T;
-            BUILDERS_CACHE[id] = builder;
-            return builder as T;
-        }
-
-        public static MyObjectBuilder_PhysicalObject GetPhysicalObjectBuilder(UniqueEntityId id)
-        {
-            return GetBuilder<MyObjectBuilder_PhysicalObject>(id);
-        }
-
         public static void Init()
         {
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to OnItemConsumed");
@@ -265,7 +250,7 @@ namespace SEDiscordBridge
                     var inv = character.GetInventory();
                     if (inv != null)
                     {
-                        inv.AddItems(1, GetPhysicalObjectBuilder(new UniqueEntityId(consumedItem)));
+                        inv.AddItems(1, ItensConstants.GetPhysicalObjectBuilder(new UniqueEntityId(consumedItem)));
                     }
                 }
             }
