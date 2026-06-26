@@ -154,10 +154,11 @@ namespace SEDiscordBridge
                                                         MySession.Static.Gpss.SendAddGpsRequest(playerId, ref gps);
                                                         // Salva ID da ultima grid de respawn, se tiver uma ja criada apaga ela
                                                         var steamId = MyAPIGateway.Players.TryGetSteamId(playerId);
-                                                        var currentGridId = SEDBStorage.Instance.GetPlayerValue<long>(steamId, PlayerStorage.KEY_LAST_RESPAWN_GRID);
-                                                        if (currentGridId != 0)
+                                                        var playerStorage = SEDBStorage.Instance.GetPlayer(steamId);
+
+                                                        if (playerStorage.LastRespawnGrid != 0)
                                                         {
-                                                            var curEntity = MyEntities.GetEntityById(currentGridId) as MyCubeGrid;
+                                                            var curEntity = MyEntities.GetEntityById(playerStorage.LastRespawnGrid) as MyCubeGrid;
                                                             if (curEntity != null)
                                                             {
                                                                 var whells = curEntity.GetConnectedGrids(GridLinkTypeEnum.Mechanical);
@@ -171,7 +172,7 @@ namespace SEDiscordBridge
                                                                 curEntity.Close();
                                                             }
                                                         }
-                                                        SEDBStorage.Instance.SetPlayerValue<long>(steamId, PlayerStorage.KEY_LAST_RESPAWN_GRID, cubeGrid.EntityId);
+                                                        playerStorage.LastRespawnGrid = cubeGrid.EntityId;
                                                     });
                                                 }
                                             }

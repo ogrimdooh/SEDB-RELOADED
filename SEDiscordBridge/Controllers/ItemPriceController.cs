@@ -260,7 +260,7 @@ namespace SEDiscordBridge.Controllers
                 new StationItensAmountProfile()
                 {
                     AcquisitionContractsCount = new Vector2I(8, 12),
-                    OtherContractsCount = new Vector2I(4, 6)
+                    OtherContractsCount = new Vector2I(4, 8)
                 }
             },
             {
@@ -268,7 +268,7 @@ namespace SEDiscordBridge.Controllers
                 new StationItensAmountProfile()
                 {
                     AcquisitionContractsCount = new Vector2I(12, 16),
-                    OtherContractsCount = new Vector2I(6, 8)
+                    OtherContractsCount = new Vector2I(6, 12)
                 }
             }
         };

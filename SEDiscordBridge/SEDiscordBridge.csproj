@@ -281,9 +281,15 @@
     <Compile Include="Controllers\Economics\MyCustomContract_Base.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeAcquisitionStrategy.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeRepairStrategy.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_TypeSalvageStrategy.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSearchStrategy.cs" />
     <Compile Include="Controllers\FactionsController.cs" />
     <Compile Include="Controllers\PrefabPriceController.cs" />
+    <Compile Include="Controllers\Rankings\BaseRankDefinition.cs" />
+    <Compile Include="Controllers\Rankings\RankEntry.cs" />
+    <Compile Include="Controllers\Rankings\RankingsConstants.cs" />
+    <Compile Include="Controllers\Rankings\Rank_CompletedMissions.cs" />
+    <Compile Include="Controllers\SeasonDonationController.cs" />
     <Compile Include="Controllers\Types\FactionType.cs" />
     <Compile Include="Controllers\Grids\ArkGroundBaseController.cs" />
     <Compile Include="Controllers\Grids\ArkLogisticRelayController.cs" />
@@ -341,6 +347,8 @@
     <Compile Include="Storage\Profession\ProfessionDiscordInfo.cs" />
     <Compile Include="Storage\Profession\ProfessionStorage.cs" />
     <Compile Include="Storage\FunctionalGrids\ServerFunctionalGridsStorage.cs" />
+    <Compile Include="Storage\Rankings\RankingChatEntryId.cs" />
+    <Compile Include="Storage\Rankings\RankingStorage.cs" />
     <Compile Include="Storage\Registry\RegistredUserInfo.cs" />
     <Compile Include="Storage\Registry\RegistryStorage.cs" />
     <Compile Include="Storage\Registry\RegistryTokenData.cs" />
@@ -350,6 +358,7 @@
     <Compile Include="Storage\SeasonMeta\SeasonMetaChatMessagesIds.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaConfiguration.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaDonationEntry.cs" />
+    <Compile Include="Storage\SeasonMeta\SeasonMetaDonationOrigin.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaEntry.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaEntryType.cs" />
     <Compile Include="Storage\SeasonMeta\SeasonMetaResult.cs" />

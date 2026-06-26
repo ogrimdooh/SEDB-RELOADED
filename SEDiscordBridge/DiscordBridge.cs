@@ -248,6 +248,20 @@ namespace SEDiscordBridge
             return null;
         }
 
+        public async Task<DiscordUser> GetUserById(ulong userUd)
+        {
+            try
+            {
+                var user = await Discord.GetUserAsync(userUd);
+                return user;
+            }
+            catch (Exception e)
+            {
+                SEDiscordBridgePlugin.Log.Error(e);
+            }
+            return null;
+        }
+
         public async Task SendDmMessage(ulong userUd, string msg)
         {
             try
@@ -643,7 +657,17 @@ namespace SEDiscordBridge
             }
         }
 
+        public string MentionNameToID(string msg)
+        {
+            return MentionNameToID(msg, GetServerGuild().Result);
+        }
+
         private string MentionNameToID(string msg, DiscordChannel chann)
+        {
+            return MentionNameToID(msg, chann.Guild);
+        }
+
+        private string MentionNameToID(string msg, DiscordGuild guild)
         {
             try
             {
@@ -655,7 +679,7 @@ namespace SEDiscordBridge
                         if (part.StartsWith("@"))
                         {
                             string name = Regex.Replace(part.Substring(1), @"[,#]", "");
-                            var roleDictionary = chann.Guild.Roles;
+                            var roleDictionary = guild.Roles;
                             dynamic roleToMention = null;
 
                             foreach (var role in roleDictionary) {
@@ -681,7 +705,7 @@ namespace SEDiscordBridge
 
                             try
                             {
-                                var members = chann.Guild.GetAllMembersAsync().Result;
+                                var members = guild.GetAllMembersAsync().Result;
 
                                 if (!Plugin.Config.MentOthers)
                                     continue;
@@ -707,7 +731,7 @@ namespace SEDiscordBridge
                             }
                         }
 
-                        var emojis = chann.Guild.Emojis;
+                        var emojis = guild.Emojis;
                         if (part.StartsWith(":") && part.EndsWith(":") && emojis.Any(e => string.Compare(e.Value.GetDiscordName(), part, true) == 0))
                             msg = msg.Replace(part, $"<{part}{emojis.Where(e => string.Compare(e.Value.GetDiscordName(), part, true) == 0).First().Key}>");
                     }

@@ -71,7 +71,7 @@ namespace SEDiscordBridge.Controllers.Economics
             };
             num3++;
             num2 += itemPrice;
-            MyObjectBuilder_ContractObtainAndDeliver myObjectBuilder_ContractObtainAndDeliver = CreateCommonOb<MyObjectBuilder_ContractObtainAndDeliver>(m_contractTypeDefinition, MyEntityIdentifier.AllocateId(MyEntityIdentifier.ID_OBJECT_TYPE.CONTRACT), factionId, blockId, rewardMoney, stationType == StationType.DeepSpaceStation);
+            MyObjectBuilder_ContractObtainAndDeliver myObjectBuilder_ContractObtainAndDeliver = CreateCommonOb<MyObjectBuilder_ContractObtainAndDeliver>(m_contractTypeDefinition, num, factionId, blockId, rewardMoney, stationType == StationType.DeepSpaceStation);
             myObjectBuilder_ContractObtainAndDeliver.RemainingTimeInS = null;
             myObjectBuilder_ContractObtainAndDeliver.ContractCondition = contractCondition;
             myObjectBuilder_ContractObtainAndDeliver.ContractTypeDefinitionId = m_contractTypeDefinition.Id;

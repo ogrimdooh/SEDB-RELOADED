@@ -72,6 +72,11 @@ namespace SEDiscordBridge.Controllers.Economics
                     Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Contract is an acquisition contract with item type {condition.ItemType} and item amount {condition.ItemAmount}.");
                     _addContractMethod.Invoke(Component, new object[] { contract });
                 }
+                else if (contract is MyContractSalvage myContractSalvage)
+                {
+                    Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Contract is a salvage contract with grid position {myContractSalvage.GridPosition} and prefab name {myContractSalvage.PrefabName}.");
+                    _addContractMethod.Invoke(Component, new object[] { contract });
+                }
                 else
                 {
                     Logging.Instance.LogWarning(typeof(EconomicsConstants), $"Contract is of unknown type {contract.GetType().Name}.");
@@ -87,6 +92,15 @@ namespace SEDiscordBridge.Controllers.Economics
             }
             return new long[0];
 
+        }
+
+        public static MyContract GetContractById(long contractId)
+        {
+            if (IsValid)
+            {
+                return Component.GetContractById(contractId) as MyContract;
+            }
+            return null;
         }
 
     }

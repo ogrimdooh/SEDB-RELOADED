@@ -11,9 +11,11 @@ using System;
 using System.Collections.Generic;
 using VRage;
 using VRage.Game.Definitions.SessionComponents;
+using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.Components.Contracts;
 using VRage.Library.Utils;
 using VRageMath;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SEDiscordBridge.Controllers.Economics
 {

@@ -14,6 +14,9 @@ namespace SEDiscordBridge.Storage.SeasonMeta
         public string Name { get; set; }
 
         [XmlElement]
+        public long MinutesBetweenManifests { get; set; } = 60;
+
+        [XmlElement]
         public long HoursBetweenCheckpoints { get; set; } = 24;
 
         [XmlElement]

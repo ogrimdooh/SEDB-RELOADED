@@ -144,7 +144,10 @@ namespace SEDiscordBridge.Controllers.Economics
             Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Adding {othersCount} other contracts to contract block {contractBlock.EntityId}.");
             for (int i = 0; i < othersCount; i++)
             {
-                var targetStrategy = EconomyOverriding.GetRandomContractType(stationType, MyContractStrategyType.Search, MyContractStrategyType.Repair);
+                var targetStrategy = EconomyOverriding.GetRandomContractType(stationType, 
+                    MyContractStrategyType.Search, 
+                    MyContractStrategyType.Repair,
+                    MyContractStrategyType.Salvage);
                 if (targetStrategy == null)
                 {
                     Logging.Instance.LogWarning(typeof(EconomicsConstants), $"No contract strategy found for contract block {contractBlock.EntityId}.");

@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using SEDiscordBridge.Storage;
 using System;
+using System.Collections.Generic;
 using System.Xml.Serialization;
 
 namespace SEDiscordBridge.Storage.SeasonMeta
@@ -16,6 +17,12 @@ namespace SEDiscordBridge.Storage.SeasonMeta
 
         [XmlElement]
         public float MassAmount { get; set; }
+
+        [XmlElement]
+        public SeasonMetaDonationOrigin Origin { get; set; }
+
+        [XmlArray("CategoriesIds"), XmlArrayItem("Id", typeof(SeasonMetaEntry))]
+        public List<string> CategoriesIds { get; set; } = new List<string>();
 
         [XmlElement]
         public string OperationDateValue { get; set; }

@@ -102,7 +102,12 @@ namespace SEDiscordBridge.Controllers.Economics
                         m_contractsByStrategy[MyContractStrategyType.Repair].Add(key);
                         break;
                     case MyContractStrategyType.Salvage:
-                        //m_contractTypeStrategies.Add(key, new MyContractTypeSalvageStrategy(economyDefinition, value));
+                        m_contractTypeStrategies.Add(key, new MyCustomContract_TypeSalvageStrategy(Definition, value));
+                        if (!m_contractsByStrategy.ContainsKey(MyContractStrategyType.Salvage))
+                        {
+                            m_contractsByStrategy.Add(MyContractStrategyType.Salvage, new List<MyDefinitionId>());
+                        }
+                        m_contractsByStrategy[MyContractStrategyType.Salvage].Add(key);
                         break;
                     case MyContractStrategyType.Search:
                         m_contractTypeStrategies.Add(key, new MyCustomContract_TypeSearchStrategy(Definition, value));

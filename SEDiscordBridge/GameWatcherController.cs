@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Game;
+using Sandbox.Game.Contracts;
 using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Character;
 using Sandbox.Game.GameSystems;
@@ -14,6 +15,7 @@ using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
 using SEDiscordBridge.Storage.FunctionalGrids;
 using SEDiscordBridge.Storage.Player;
+using SEDiscordBridge.Storage.SeasonMeta;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -109,7 +111,51 @@ namespace SEDiscordBridge
 
         private static void ContractFinished(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
         {
-
+            var contract = ContractSystemOverriding.GetContractById(contractId);
+            if (contract != null)
+            {
+                MyAPIGateway.Parallel.Start(() => {
+                    // Register player contract completion in storage
+                    var steamId = MySession.Static.Players.TryGetSteamId(acceptingPlayerId);
+                    var playerStorage = SEDBStorage.Instance.GetPlayer(steamId);
+                    if (!playerStorage.DidCompleteContract)
+                    {
+                        playerStorage.DidCompleteContract = true;
+                        MyPlayer.PlayerId id2;
+                        if (MySession.Static.Players.TryGetPlayerId(acceptingPlayerId, out id2))
+                        {
+                            var player2 = MySession.Static.Players.GetPlayerById(id2);
+                            if (player2 != null && !string.IsNullOrWhiteSpace(player2.DisplayName))
+                            {
+                                SEDiscordBridgePlugin.Static.DDBridge.SendStatusMessage(player2.DisplayName, player2.Id.SteamId, SEDiscordBridgePlugin.Static.Config.CompleteFirstContractMessage);
+                            }
+                        }
+                    }
+                    var definition = contract.GetDefinition();
+                    var completeContractCount = playerStorage.GetCompleteContractCount(definition.StrategyType);
+                    playerStorage.SetCompleteContractCount(definition.StrategyType, completeContractCount + 1);
+                    playerStorage.AllContractsCount = playerStorage.AllContractsCount + 1;
+                    // Register a donation when contract is a deliver one
+                    if (contract is MyContractObtainAndDeliver obtainAndDeliver)
+                    {
+                        var deliverCondition = obtainAndDeliver.ContractCondition as MyContractConditionDeliverItems;
+                        if (deliverCondition != null)
+                        {
+                            SeasonDonationController.DoRegisterPlayerDonation(
+                                steamId, 
+                                SeasonMetaDonationOrigin.AcquisitionContract, 
+                                new Dictionary<MyDefinitionId, float> { 
+                                    { deliverCondition.ItemType, deliverCondition.ItemAmount } 
+                                }
+                            );
+                        }
+                    }
+                });
+            }
+            else
+            {
+                Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: Contract not found for Id={contractId}");
+            }
         }
 
         private static void ContractFailed(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId, bool IsAbandon)
@@ -293,9 +339,7 @@ namespace SEDiscordBridge
 
             var player = Players[playerId];
 
-            var didRegisterLocation = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION);
-            var lastLocationIsGravity = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY);
-            var lastLocationEntityId = SEDBStorage.Instance.GetPlayerValue<long>(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID);
+            var playerStorage = SEDBStorage.Instance.GetPlayer(playerId.SteamId);
 
             var playerPos = player.GetPosition();
 
@@ -303,7 +347,7 @@ namespace SEDiscordBridge
             {
                 /* Player Enters in Gravity Field */
                 
-                if (!lastLocationIsGravity)
+                if (!playerStorage.LastLocationIsGravity)
                 {
 
                     var action = SEDiscordBridgePlugin.Static.Config.GravityActionEnter;
@@ -312,11 +356,10 @@ namespace SEDiscordBridge
 
                     var planet = GetPlanetAtRange(playerPos);
 
-                    if (planet != null && lastLocationEntityId != planet.EntityId)
+                    if (planet != null && playerStorage.LastLocationEntityId != planet.EntityId)
                     {
 
-                        var KEY_VISITED = string.Format(PlayerStorage.KEY_LOCATION_VISITED, planet.EntityId);
-                        var didVisitLocation = SEDBStorage.Instance.GetPlayerValue<bool>(playerId.SteamId, KEY_VISITED);
+                        var didVisitLocation = playerStorage.GetLocationVisited(planet.EntityId);
 
                         IMyCubeBlock cockpit = null;
                         if (character != null)
@@ -365,11 +408,10 @@ namespace SEDiscordBridge
 
                         }
 
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION, true);
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY, true);
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, KEY_VISITED, true);
-                        SEDBStorage.Instance.SetPlayerValue(playerId.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID, planet.EntityId);
-                        SEDBStorage.Save();
+                        playerStorage.DidRegistrationLocation = true;
+                        playerStorage.LastLocationIsGravity = true;
+                        playerStorage.LastLocationEntityId = planet.EntityId;
+                        playerStorage.SetLocationVisited(planet.EntityId, true);
 
                     }
 
@@ -380,7 +422,7 @@ namespace SEDiscordBridge
             {
 
                 /* Player Leaves in Gravity Field */
-                if (didRegisterLocation && lastLocationIsGravity)
+                if (playerStorage.DidRegistrationLocation && playerStorage.LastLocationIsGravity)
                 {
 
                     var action = SEDiscordBridgePlugin.Static.Config.GravityActionLeave;
@@ -426,20 +468,18 @@ namespace SEDiscordBridge
 
                     }
 
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION, true);
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY, false);
-                    SEDBStorage.Instance.SetPlayerValue<long>(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID, 0);
-                    SEDBStorage.Save();
+                    playerStorage.DidRegistrationLocation = true;
+                    playerStorage.LastLocationIsGravity = false;
+                    playerStorage.LastLocationEntityId = 0;
 
                 }
 
-                if (!didRegisterLocation)
+                if (!playerStorage.DidRegistrationLocation)
                 {
 
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_DID_REGISTERLOCATION, true);
-                    SEDBStorage.Instance.SetPlayerValue(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ISGRAVITY, false);
-                    SEDBStorage.Instance.SetPlayerValue<long>(player.Id.SteamId, PlayerStorage.KEY_LASTLOCATION_ENTITYID, 0);
-                    SEDBStorage.Save();
+                    playerStorage.DidRegistrationLocation = true;
+                    playerStorage.LastLocationIsGravity = false;
+                    playerStorage.LastLocationEntityId = 0;
 
                 }
 
@@ -952,15 +992,15 @@ namespace SEDiscordBridge
                                 var player2 = MySession.Static.Players.GetPlayerById(id2);
                                 if (player2 != null && !string.IsNullOrWhiteSpace(player2.DisplayName))
                                 {
-                                    var didKill = SEDBStorage.Instance.GetPlayerValue<bool>(player2.Id.SteamId, PlayerStorage.KEY_DID_KILL);
-                                    if (!didKill)
+                                    var playerStorage = SEDBStorage.Instance.GetPlayer(id2.SteamId);
+
+                                    if (!playerStorage.DidKill)
                                     {
                                         SEDiscordBridgePlugin.Static.DDBridge.SendStatusMessage(player2.DisplayName, player2.Id.SteamId, SEDiscordBridgePlugin.Static.Config.FirstKillMessage);
-                                        SEDBStorage.Instance.SetPlayerValue<bool>(player2.Id.SteamId, PlayerStorage.KEY_DID_KILL, true);
+                                        playerStorage.DidKill = true;
                                     }
-                                    var killCount = SEDBStorage.Instance.GetPlayerValue<int>(player2.Id.SteamId, PlayerStorage.KEY_KILL_COUNT);
-                                    SEDBStorage.Instance.SetPlayerValue<int>(player2.Id.SteamId, PlayerStorage.KEY_KILL_COUNT, killCount + 1);
-                                    SEDBStorage.Save();
+                                    var killCount = playerStorage.KillCount;
+                                    playerStorage.KillCount = killCount;
 
                                     msgToUse = SEDiscordBridgePlugin.Static.Config.MurderMessage;
                                     msgToUse = msgToUse.Replace("{p2}", player2.DisplayName);

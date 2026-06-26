@@ -1,5 +1,6 @@
 ﻿using SEDiscordBridge.Controllers.Types;
 using SEDiscordBridge.Storage.FunctionalGrids;
+using VRageMath;
 
 namespace SEDiscordBridge.Controllers.Grids
 {
@@ -46,6 +47,11 @@ namespace SEDiscordBridge.Controllers.Grids
         protected override FactionType GetFactionType()
         {
             return FactionType.All;
+        }
+
+        protected override Vector2 GetEconomyCycleTime()
+        {
+            return new Vector2(1350, 2250);
         }
 
         protected override void LoadServices()

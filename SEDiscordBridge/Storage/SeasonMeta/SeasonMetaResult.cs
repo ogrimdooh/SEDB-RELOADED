@@ -22,8 +22,8 @@ namespace SEDiscordBridge.Storage.SeasonMeta
 
         [XmlIgnore]
         [JsonIgnore]
-        public DateTime? LastCheckpoint 
-        { 
+        public DateTime? LastCheckpoint
+        {
             get
             {
                 if (DateTime.TryParseExact(LastCheckpointValue, SEDBStorage.DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
@@ -33,6 +33,25 @@ namespace SEDiscordBridge.Storage.SeasonMeta
             set
             {
                 LastCheckpointValue = value?.ToString(SEDBStorage.DATE_FORMAT);
+            }
+        }
+
+        [XmlElement]
+        public string LastManifestUpdateValue { get; set; }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public DateTime? LastManifestUpdate
+        { 
+            get
+            {
+                if (DateTime.TryParseExact(LastManifestUpdateValue, SEDBStorage.DATE_FORMAT, null, System.Globalization.DateTimeStyles.None, out var result))
+                    return result;
+                return null;
+            }
+            set
+            {
+                LastManifestUpdateValue = value?.ToString(SEDBStorage.DATE_FORMAT);
             }
         }
 
@@ -68,6 +87,13 @@ namespace SEDiscordBridge.Storage.SeasonMeta
             {
                 item.Amount += (long)(amount * weight);
             }
+        }
+
+        public List<SeasonMetaDonationEntry> GetDonationsSiceLastManifest(params SeasonMetaDonationOrigin[] origins)
+        {
+            if (LastManifestUpdate.HasValue)
+                return Donations.Where(x => x.OperationDate > LastManifestUpdate && origins.Contains(x.Origin)).ToList();
+            return Donations.Where(x => origins.Contains(x.Origin)).ToList();
         }
 
     }

@@ -7,6 +7,7 @@ using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Controllers.Economics;
 using SEDiscordBridge.Controllers.Types;
+using SEDiscordBridge.Extensions;
 using SEDiscordBridge.Patches;
 using SpaceEngineers.Game.Entities.Blocks;
 using System;
@@ -625,10 +626,34 @@ Press ENTER to confirm selection.",
         protected abstract StationType GetStationType();
         protected abstract StationLevel GetStationLevel();
         protected abstract FactionType GetFactionType();
+        protected abstract Vector2 GetEconomyCycleTime();
 
         protected abstract IArkTerminalBocks CreateNewTerminalBlock(string name);
 
         protected abstract void OnAfterInit();
+
+        protected long _economyCycleTime = 0;
+        protected DateTime _lastEconomyCycle = DateTime.Now;
+        protected void DoEconomyCycle()
+        {
+            var cycleTime = GetEconomyCycleTime();
+            _economyCycleTime = (long)(cycleTime.GetRandom() * 1000);
+            _lastEconomyCycle = DateTime.Now;
+            if (ARKGRIDSTOREBLOCK != null && ARKGRIDSTORECARGOBLOCK != null)
+            {
+                EconomicsConstants.LoadStoreBlock(ARKGRIDSTOREBLOCK, ARKGRIDSTORECARGOBLOCK);
+            }
+            if (ARKGRIDCONTRACTBLOCK != null)
+            {
+                EconomicsConstants.LoadContractBlock(ARKGRIDCONTRACTBLOCK, GetStationType(), GetStationLevel(), GetFactionType());
+            }
+            Logging.Instance.LogInfo(GetType(), $"DoEconomyCycle called : cycleTime={_economyCycleTime}ms");
+        }
+
+        protected bool IsEconomyCycleDue()
+        {
+            return (DateTime.Now - _lastEconomyCycle).TotalMilliseconds >= _economyCycleTime;
+        }
 
         protected bool _initialized = false;
         protected void DoInit()
@@ -675,15 +700,12 @@ Press ENTER to confirm selection.",
                     Logging.Instance.LogInfo(GetType(), $"ArkGrid StoreBlock found and loaded: {ARKGRIDSTOREBLOCK.EntityId}");
                     ARKGRIDSTORECARGOBLOCK = cargoBlocks.First() as MyCargoContainer;
                     Logging.Instance.LogInfo(GetType(), $"ArkGrid Store CargoBlock found and loaded: {ARKGRIDSTORECARGOBLOCK.EntityId}");
-                    EconomicsConstants.LoadStoreBlock(ARKGRIDSTOREBLOCK, ARKGRIDSTORECARGOBLOCK);
                 }
             }
 
             ARKGRIDCONTRACTBLOCK = ARKGRID.GetFatBlocks<MyContractBlock>().FirstOrDefault();
-            if (ARKGRIDCONTRACTBLOCK != null)
-            {
-                EconomicsConstants.LoadContractBlock(ARKGRIDCONTRACTBLOCK, GetStationType(), GetStationLevel(), GetFactionType());
-            }
+
+            DoEconomyCycle();
 
             foreach (var item in ARKGRID.GetFatBlocks<MyShipConnector>())
             {
@@ -734,6 +756,10 @@ Press ENTER to confirm selection.",
                 while (canRun)
                 {
                     CheckTerminals();
+                    if (IsEconomyCycleDue())
+                    {
+                        DoEconomyCycle();
+                    }
                     if (MyAPIGateway.Parallel != null)
                         MyAPIGateway.Parallel.Sleep(1000);
                     else

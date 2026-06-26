@@ -1,4 +1,5 @@
-﻿using SEDiscordBridge.Entities.Base;
+﻿using Sandbox.Definitions;
+using SEDiscordBridge.Entities.Base;
 using System.Collections.Concurrent;
 using VRage;
 using VRage.Game;
@@ -6,7 +7,6 @@ using VRage.ObjectBuilders;
 
 namespace SEDiscordBridge.Controllers
 {
-
     public static class ItensConstants
     {
 
@@ -102,6 +102,20 @@ namespace SEDiscordBridge.Controllers
         public static MyObjectBuilder_PhysicalObject GetPhysicalObjectBuilder(UniqueEntityId id)
         {
             return GetBuilder<MyObjectBuilder_PhysicalObject>(id);
+        }
+
+        private static ConcurrentDictionary<MyDefinitionId, float> _massCache = new ConcurrentDictionary<MyDefinitionId, float>();
+        public static float GetItemMass(MyDefinitionId item)
+        {
+            if (_massCache.ContainsKey(item))
+                return _massCache[item];
+            var def = MyDefinitionManager.Static.GetPhysicalItemDefinition(item);
+            if (def != null)
+            {
+                _massCache[item] = def.Mass;
+                return def.Mass;
+            }
+            return 0f;
         }
 
     }

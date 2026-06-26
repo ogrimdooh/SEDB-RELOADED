@@ -204,7 +204,11 @@ namespace SEDiscordBridge
         [XmlIgnore]
         private string _professionChannelId = "";
         public string ProfessionChannelId { get => _professionChannelId; set => SetValue(ref _professionChannelId, value); }
-        
+
+        [XmlIgnore]
+        private string _rankingsChannelId = "";
+        public string RankingsChannelId { get => _rankingsChannelId; set => SetValue(ref _rankingsChannelId, value); }
+
         /* Server */
 
         [XmlIgnore]
@@ -334,6 +338,12 @@ namespace SEDiscordBridge
         [XmlIgnore]
         public float _maxDistanceToDetectAPlanet = 120;
         public float MaxDistanceToDetectAPlanet { get => _maxDistanceToDetectAPlanet; set => SetValue(ref _maxDistanceToDetectAPlanet, value); }
+
+        /* Contracts */
+
+        [XmlIgnore]
+        public string _completeFirstContractMessage = ":receipt: The player {p} has completed their first contract. Congratulations!";
+        public string CompleteFirstContractMessage { get => _completeFirstContractMessage; set => SetValue(ref _completeFirstContractMessage, value); }
 
         /* Player */
 

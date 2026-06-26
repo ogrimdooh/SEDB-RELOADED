@@ -7,12 +7,15 @@ using Sandbox.Game.Entities.Character;
 using Sandbox.Game.Gui;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Controllers.Rankings;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
 using SEDiscordBridge.Storage.Bank;
 using SEDiscordBridge.Storage.Base;
 using SEDiscordBridge.Storage.Player;
 using SEDiscordBridge.Storage.Profession;
+using SEDiscordBridge.Storage.Rankings;
+using SEDiscordBridge.Storage.Registry;
 using SEDiscordBridge.Storage.SeasonMeta;
 using System;
 using System.Collections.Generic;
@@ -295,7 +298,24 @@ Processed Items: {3}
 
 {4}
 
-The Ark manifest has been updated. Every shipment brings the next jump closer.";
+The Ark manifest has been updated. Every shipment brings the next jump closer.
+
+---";
+
+        private const string SEASON_META_MANIFEST_ALERT = @":clipboard: D.A.W.N. Acquisition Summary
+
+Last {0} minutes Ark Deliveries:
+- {1} acquisition contracts completed
+- Submitted Mass: {2}
+- Processed Items: {3}
+- **{4}** explorers contributed.
+- Explorer {5} was the one who contributed the most.
+
+Supplied objectives:
+{6}
+The Ark manifest has been updated.
+
+---";
 
         public enum DeliveryClassification
         {
@@ -407,13 +427,61 @@ The Ark manifest has been updated. Every shipment brings the next jump closer.";
                         Log.Info("Sending new delivery message to the channel...");
                         var classification = GetDeliveryClassification(totalItens, massDonation);
                         var msg = string.Format(SEASON_META_DELIVERY_ALERT,
-                            user.Username,
+                            $"@{user.Username}",
                             DELIVERY_CLASSIFICATION[classification],
                             massDonation.ToString("N2"),
                             totalItens.ToString("N2"),
                             GetRandomClassificationMsg(classification));
+
+                        msg = DDBridge.MentionNameToID(msg);
+
                         MsgWorker.SendToDiscord(channel, msg, true);
                     }
+                }
+            }
+        }
+
+        public void AlertDonationsManifest(long minutesSinceLastManifest, int totalContracts, float totalMass, long totalItens, int totalPlayers, ulong userId, params string[] categories)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId))
+            {
+                var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                if (channel != null)
+                {
+                    var userName = "Unknown";
+                    var user = DiscordBridge.Discord.GetUserAsync(userId).Result;
+                    if (user != null)
+                    {
+                        userName = $"@{user.Username}";
+                    }
+
+                    var sb = new StringBuilder();
+                    if (categories.Any())
+                    {
+                        foreach (var item in categories)
+                        {
+                            sb.AppendLine($"- {item}");
+                        }
+                    }
+                    else
+                    {
+                        sb.AppendLine($"- Unknown");
+                    }
+
+                    Log.Info("Sending new delivery message to the channel...");
+
+                    var msg = string.Format(SEASON_META_MANIFEST_ALERT,
+                        minutesSinceLastManifest,
+                        totalContracts,
+                        totalMass.ToString("N2"),
+                        totalItens.ToString("N2"),
+                        totalPlayers,
+                        userName,
+                        sb.ToString());
+
+                    msg = DDBridge.MentionNameToID(msg);
+
+                    MsgWorker.SendToDiscord(channel, msg, true);
                 }
             }
         }
@@ -713,7 +781,7 @@ Report to your faction, secure your cargo, and prepare for the next jump.
 
         private const string REGISTRY_ALERT_REGISTRY_COMPLETED = @":white_check_mark: D.A.W.N. Registry Update
 
-Explorer **{0}** has been officially added to the Second Dawn Crew.
+Explorer {0} has been officially added to the Second Dawn Crew.
 
 The Ark recognizes their signal. The journey continues with one more soul aboard.";
 
@@ -726,7 +794,12 @@ The Ark recognizes their signal. The journey continues with one more soul aboard
                 if (channel != null && user != null)
                 {
                     Log.Info("Sending new start message to the channel...");
-                    MsgWorker.SendToDiscord(channel, string.Format(REGISTRY_ALERT_REGISTRY_COMPLETED, user.Username), true);
+
+                    var msg = string.Format(REGISTRY_ALERT_REGISTRY_COMPLETED, $"@{user.Username}");
+
+                    msg = DDBridge.MentionNameToID(msg);
+
+                    MsgWorker.SendToDiscord(channel, msg, true);
                 }
             }
         }
@@ -1177,7 +1250,7 @@ No changes were made and no Dawn Marks were charged.";
 
         private const string PROFESSION_ALERT_MESSAGE = @":identification_card: D.A.W.N. Registry Update
 
-Explorer **{0}** has joined the **{1} Division**.
+Explorer {0} has joined the **{1} Division**.
 
 The Second Dawn recognizes their new operational role.";
 
@@ -1189,7 +1262,11 @@ The Second Dawn recognizes their new operational role.";
                 if (channel != null)
                 {
                     Log.Info("Sending prof changed to the channel...");
-                    MsgWorker.SendToDiscord(channel, string.Format(PROFESSION_ALERT_MESSAGE, user.Username, professionInfo.Name), true);
+                    var msg = string.Format(PROFESSION_ALERT_MESSAGE, $"@{user.Username}", professionInfo.Name);
+
+                    msg = DDBridge.MentionNameToID(msg);
+
+                    MsgWorker.SendToDiscord(channel, msg, true);
                     await DDBridge.RemoveRoleToUser(user.Id, ProfessionStorage.Instance.GetOthersRolesIds(professionInfo.Id).ToArray());
                     await DDBridge.AddRoleToUser(user.Id, ProfessionStorage.Instance.GetRolesId(professionInfo.Id));
                 }
@@ -1218,8 +1295,9 @@ The Second Dawn recognizes their new operational role.";
                         acc = SEDBStorage.Instance.Bank.GetBankAccount(user.Id);
                     }
 
-                    var curProf = SEDBStorage.Instance.GetPlayerValue<string>(registry.SteamId, PlayerStorage.KEY_PROFESSION);
-                    var hasProf = !string.IsNullOrWhiteSpace(curProf);
+                    var playerStorage = SEDBStorage.Instance.GetPlayer(registry.SteamId);
+
+                    var hasProf = !string.IsNullOrWhiteSpace(playerStorage.Profession);
 
                     if (!ProfessionStorage.PROFESSIONS.ContainsKey(professionId))
                     {
@@ -1240,7 +1318,7 @@ The Second Dawn recognizes their new operational role.";
                     var doAlert = false;
                     if (hasProf)
                     {
-                        if (curProf == professionId)
+                        if (playerStorage.Profession == professionId)
                         {
                             msgToSend = string.Format(PROFESSION_REASSIGNMENT_NOTNEEDED_DM_MESSAGE,
                                 profInfo.Name.ToUpper());
@@ -1258,11 +1336,11 @@ The Second Dawn recognizes their new operational role.";
                             }
                             else
                             {
-                                var curProfInfo = ProfessionStorage.PROFESSIONS[curProf];
+                                var curProfInfo = ProfessionStorage.PROFESSIONS[playerStorage.Profession];
                                 var oldBalance = acc.Balance;
                                 if (acc.DoFee(SEDBStorage.Instance.Profession.ChangeCost, "Profession Reassignment Fee", $"Assigned to `{profInfo.Name.ToUpper()}`"))
                                 {
-                                    SEDBStorage.Instance.SetPlayerValue<string>(registry.SteamId, PlayerStorage.KEY_PROFESSION, professionId);
+                                    playerStorage.Profession = professionId;
                                     msgToSend = string.Format(PROFESSION_REASSIGNMENT_DM_MESSAGE,
                                         curProfInfo.Name.ToUpper(),
                                         profInfo.Name.ToUpper(),
@@ -1281,7 +1359,7 @@ The Second Dawn recognizes their new operational role.";
                     }
                     else
                     {
-                        SEDBStorage.Instance.SetPlayerValue<string>(registry.SteamId, PlayerStorage.KEY_PROFESSION, professionId);
+                        playerStorage.Profession = professionId;
                         msgToSend = string.Format(PROFESSION_ASSIGNMENT_DM_MESSAGE,
                             profInfo.Name.ToUpper(),
                             acc.Balance.ToString("N2"),
@@ -1297,7 +1375,7 @@ The Second Dawn recognizes their new operational role.";
                     }
                     if (doAlert)
                     {
-                        AlertChangeProffesionIsCompleted(user, profInfo);
+                        await AlertChangeProffesionIsCompleted(user, profInfo);
                     }
                 }
             }
@@ -1420,11 +1498,175 @@ The Second Dawn recognizes their new operational role.";
             }
         }
 
+        private const string RANKING_START_MESSAGE = @":trophy: **THE SECOND DAWN — ARK RANKINGS**
+
+This channel is maintained by **D.A.W.N. — Distributed Ark Watch Network**.
+
+Here, the Ark records the explorers who have contributed the most during the current jump cycle. Rankings are based on verified activity processed through Ark systems and may be refreshed automatically as new records are received.
+Only registered members of the **Second Dawn Crew** are eligible to appear in official Ark rankings.
+Current records reflect the active season only.
+
+The Ark remembers those who move the mission forward.
+
+---";
+
+        private const string RANK_ENTRY_MESSAGE = @"{0} **{1}**
+
+{2}
+
+---
+
+**Current Standings**
+
+{3}
+---
+
+{4}
+
+---";
+
+        private const string RANKING_CLEAN_MESSAGE = @"No completed mission records have been registered yet.
+D.A.W.N. is waiting for field activity reports.";
+
+        private const string RANKING_NOT_COMPLETE_LIST = @"Remaining positions are awaiting qualified explorers.";
+
+        private async Task RefreshRankingsChannel()
+        {
+            Log.Info("Refreshing Rankings Channel...");
+            if (!string.IsNullOrWhiteSpace(Config.RankingsChannelId) && SEDBStorage.Instance.Ranking.Enabled)
+            {
+                Log.Info("Rankings is enabled, updating channel...");
+                var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.RankingsChannelId)).Result;
+                if (channel != null)
+                {
+                    Log.Info("Rankings channel found, updating messages...");
+                    // Limpa mensagens antigas
+                    var needNewMessages = false;
+                    var messages = await channel.GetMessagesAsync(100);
+                    if (messages.Any())
+                    {
+                        Log.Info($"Found {messages.Count} messages in the channel, checking if they match expected count and IDs...");
+                        // Calcula o total de mensagens que deveriam estar no canal (mensagem geral + mensagens de categoria)
+                        var expectedMessageCount = 1 + RankingsConstants.RANK_DEFINITIONS.Length; // 1 para a mensagem geral + QTD de Ranks
+                        // Verifica se todas as mensagens com ids salvos existem, caso contrário, limpa o canal para evitar mensagens desatualizadas
+                        var ids = SEDBStorage.Instance.Ranking.GetAllMessagesIds();
+                        var msgsIds = messages.Select(m => m.Id).ToHashSet();
+                        Log.Info($"Expected message count: {expectedMessageCount}, actual message count: {messages.Count}, expected IDs: {string.Join(", ", ids)}, actual IDs: {string.Join(", ", msgsIds)}");
+                        if (expectedMessageCount != messages.Count ||
+                            expectedMessageCount != ids.Count ||
+                            !ids.All(id => msgsIds.Any(m => m != 0 && m == id)))
+                        {
+                            Log.Warn("Message count or IDs do not match expected values, clearing channel messages...");
+                            await channel.DeleteMessagesAsync(messages);
+                            SEDBStorage.Instance.Ranking.RankingsMsgIds.Clear();
+                            needNewMessages = true;
+                        }
+                        else
+                        {
+                            Log.Info("All expected messages are present, will update existing messages...");
+                        }
+                    }
+                    else
+                    {
+                        needNewMessages = true;
+                    }
+
+                    // Envia nova mensagem com os dados atualizados
+                    var startMsg = RANKING_START_MESSAGE.Replace("/n", "\n");
+                    if (needNewMessages)
+                    {
+                        Log.Info("Sending new start message to the channel...");
+                        MsgWorker.SendToDiscord(channel, startMsg, true, (dMsg) =>
+                        {
+                            SEDBStorage.Instance.Ranking.StartMsgId = dMsg.Id;
+                        });
+                    }
+                    else
+                    {
+                        Log.Info("Updating existing start message...");
+                        // Atualiza a mensagem geral
+                        var generalMsgId = SEDBStorage.Instance.Ranking.StartMsgId;
+                        var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
+                        if (generalMsg != null && generalMsg.Content.CompareTo(startMsg) != 0)
+                        {
+                            await generalMsg.ModifyAsync(startMsg);
+                        }
+                        await generalMsg.DeleteAllReactionsAsync();
+                    }
+
+                    foreach (var rankDef in RankingsConstants.RANK_DEFINITIONS)
+                    {
+
+                        var entries = new StringBuilder();
+                        var c = 0;
+                        foreach (var bKey in rankDef.GetEntries())
+                        {
+                            var user = DDBridge.GetUserById(bKey.UserId).Result;
+                            var line = rankDef.GetValueFormated(
+                                rankDef.GetIconForOrder(bKey.Order),
+                                $"@{user.Username}",
+                                bKey.Value
+                            );
+                            entries.AppendLine(line);
+                            c++;
+                        }
+                        if (c == 0)
+                        {
+                            entries.AppendLine(RANKING_CLEAN_MESSAGE);
+                        }
+                        else if (c < 10)
+                        {
+                            entries.AppendLine("");
+                            entries.AppendLine(RANKING_NOT_COMPLETE_LIST);
+                        }
+
+                        var rankMessage = string.Format(RANK_ENTRY_MESSAGE,
+                            rankDef.GetIcon(),
+                            rankDef.GetName(),
+                            rankDef.GetDescription(),
+                            entries.ToString(),
+                            rankDef.GetFooter());
+
+                        rankMessage = DDBridge.MentionNameToID(rankMessage);
+
+                        if (needNewMessages)
+                        {
+                            Log.Info($"Sending new message for profession {rankDef.GetId()} to the channel...");
+                            MsgWorker.SendToDiscord(channel, rankMessage, true, (dMsg) => {
+                                SEDBStorage.Instance.Ranking.RankingsMsgIds.Add(new RankingChatEntryId()
+                                {
+                                    RankId = rankDef.GetId(),
+                                    MsgId = dMsg.Id
+                                });
+                            });
+                        }
+                        else
+                        {
+                            Log.Info($"Updating existing message for category {rankDef.GetId()}...");
+                            var rankMsgId = SEDBStorage.Instance.Ranking.RankingsMsgIds.FirstOrDefault(m => m.RankId == rankDef.GetId())?.MsgId;
+                            if (rankMsgId != null)
+                            {
+                                var rankMsg = messages.FirstOrDefault(m => m.Id == rankMsgId);
+                                if (rankMsg != null && rankMsg.Content.CompareTo(rankMessage) != 0)
+                                {
+                                    await rankMsg.ModifyAsync(rankMessage);
+                                }
+                                await rankMsg.DeleteAllReactionsAsync();
+                            }
+                        }
+
+                    }
+                }
+
+            }
+        }
+
         private bool _discordChannelsCanBeRefreshing = false;
         private bool _seasonMetaNeedRefreshing = false;
         private bool _registryNeedRefreshing = false;
         private bool _bankNeedRefreshing = false;
         private bool _professionNeedRefreshing = false;
+        private bool _rankingsNeedRefreshing = false;
         private DateTime _lastUpdateSeasonMeta = DateTime.MinValue;
 
         public void LoadSEDB()
@@ -1437,6 +1679,7 @@ The Second Dawn recognizes their new operational role.";
             _registryNeedRefreshing = true;
             _bankNeedRefreshing = true;
             _professionNeedRefreshing = true;
+            _rankingsNeedRefreshing = true;
 
             if (Config.LoadRanks)
                 ReflectEssentials();
@@ -1500,6 +1743,13 @@ The Second Dawn recognizes their new operational role.";
                             RefreshProfessionChannel().Wait();
                         });
                     }
+                    if (_rankingsNeedRefreshing)
+                    {
+                        _rankingsNeedRefreshing = false;
+                        MyAPIGateway.Parallel.Start(() => {
+                            RefreshRankingsChannel().Wait();
+                        });
+                    }
                 }
 
                 if (_chatmanager == null)
@@ -1548,6 +1798,13 @@ The Second Dawn recognizes their new operational role.";
                     _professionNeedRefreshing = false;
                     MyAPIGateway.Parallel.Start(() => {
                         RefreshProfessionChannel().Wait();
+                    });
+                }
+                if (_rankingsNeedRefreshing)
+                {
+                    _rankingsNeedRefreshing = false;
+                    MyAPIGateway.Parallel.Start(() => {
+                        RefreshRankingsChannel().Wait();
                     });
                 }
             }
@@ -1698,6 +1955,41 @@ The Second Dawn recognizes their new operational role.";
                         RefreshSeasonMetaChannel().Wait();
                         _seasonMetaNeedRefreshing = false;
                     });
+                    _rankingsNeedRefreshing = true;
+                    MyAPIGateway.Parallel.Start(() => {
+                        RefreshRankingsChannel().Wait();
+                        _rankingsNeedRefreshing = false;
+                    });
+                }
+            }
+            var seasonResult = SeasonMetaResultStorage.Instance.GetActiveResult();
+            var seasonConfig = SeasonMetaConfigStorage.Instance.GetActiveConfiguration();
+            if (seasonResult != null)
+            {
+                var lastManifest = seasonResult.LastManifestUpdate;
+                if (!lastManifest.HasValue || lastManifest.Value.AddMinutes(seasonConfig.MinutesBetweenManifests) < DateTime.Now)
+                {
+                    var donations = seasonResult.GetDonationsSiceLastManifest(SeasonMetaDonationOrigin.AcquisitionContract);
+                    seasonResult.LastManifestUpdate = DateTime.Now;
+
+                    if (donations.Any()) 
+                    {
+                        var totalMass = donations.Sum(x => x.MassAmount);
+                        var totalItems = donations.Sum(x => x.ItemCount);
+                        var totalPlayers = donations.Select(x => x.SteamId).Distinct().Count();
+                        var steamId = donations.GroupBy(x => x.SteamId).OrderByDescending(x => x.Count()).Select(x => x.Key).FirstOrDefault();
+                        var userId = RegistryStorage.Instance.GetSteamUserInfo(steamId)?.UserId ?? 0;
+                        var categories = donations.SelectMany(x => x.CategoriesIds).Distinct().Select(x => SeasonMetaConfigStorage.Instance.GetCategoryById(x)?.Name).ToArray();
+                        AlertDonationsManifest(
+                            seasonConfig.MinutesBetweenManifests,
+                            donations.Count,
+                            totalMass,
+                            totalItems,
+                            totalPlayers,
+                            userId,
+                            categories
+                        );
+                    }
                 }
             }
         }

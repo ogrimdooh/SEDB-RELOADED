@@ -93,6 +93,11 @@ and added to the current Ark Jump objectives.
             return FactionType.All;
         }
 
+        protected override Vector2 GetEconomyCycleTime()
+        {
+            return new Vector2(1350, 2250);
+        }
+
         protected override void LoadServices()
         {
             AddService(TERMINAL_SERVICE_TYPE_SUBMITRESOURCES, TERMINAL_SERVICE_SUBMITRESOURCES);
@@ -115,7 +120,7 @@ and added to the current Ark Jump objectives.
             if (validInventories.Any())
             {
                 var itemCount = (long)validInventories.Values.Sum(x => x.Values.Sum());
-                var itemMass = validInventories.Values.Sum(x => x.Sum(y => GetItemMass(y.Key) * y.Value));
+                var itemMass = validInventories.Values.Sum(x => x.Sum(y => ItensConstants.GetItemMass(y.Key) * y.Value));
                 tInterface.SetValue("item_mass", itemMass);
                 tInterface.SetValue("item_count", itemCount);
                 return true;
@@ -217,48 +222,7 @@ Select cargo transfer scope:
         {
             var inventories = DoGetInventoriesToInteract(tInterface, index, scope);
             var validInventories = DoFilterInventoriesToInteract(inventories);
-            if (validInventories.Any())
-            {
-                var finalAmount = 0f;
-                var finalMass = 0f;
-                foreach (var inventory in validInventories.Keys)
-                {
-                    var items = validInventories[inventory];
-                    foreach (var itemId in items.Keys)
-                    {
-                        var amount = (MyFixedPoint)items[itemId];
-                        var removedAmount = (float) inventory.RemoveItemsOfType(amount, itemId);
-                        if (removedAmount > 0)
-                        {
-                            var removedMass = removedAmount * GetItemMass(itemId);
-                            finalAmount += removedAmount;
-                            finalMass += removedMass;
-                            var categoryId = SEDBStorage.Instance.SeasonMetaConfig.GetItemCategoryById(itemId);
-                            var categoryInfo = SEDBStorage.Instance.SeasonMetaConfig.GetCategoryById(categoryId);
-                            var itemInfo = categoryInfo.GetItemById(itemId);
-                            SEDBStorage.Instance.SeasonMetaResult.GetActiveResult().AddValueToEntry(
-                                categoryId, 
-                                (long)removedAmount,
-                                itemInfo.Weight
-                            );
-                        }
-                    }
-                }
-                if (finalAmount > 0)
-                {
-                    var donation = new SeasonMetaDonationEntry()
-                    {
-                        SteamId = tInterface.LoggedSteamId,
-                        ItemCount = (long)finalAmount,
-                        MassAmount = finalMass,
-                        OperationDate = DateTime.Now
-                    };
-                    SEDBStorage.Instance.SeasonMetaResult.GetActiveResult().Donations.Add(donation);
-                    SEDiscordBridgePlugin.Static.AlertDonationIsCompleted(donation.SteamId, donation.ItemCount, donation.MassAmount);
-                    return true;
-                }
-            }
-            return false;
+            return SeasonDonationController.DoRegisterPlayerDonation(tInterface.LoggedSteamId, SeasonMetaDonationOrigin.Player, validInventories);
         }
 
         protected override void OnAfterInit()

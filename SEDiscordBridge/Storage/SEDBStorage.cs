@@ -11,6 +11,7 @@ using SEDiscordBridge.Storage.Bank;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Newtonsoft.Json;
 using SEDiscordBridge.Storage.FunctionalGrids;
+using SEDiscordBridge.Storage.Rankings;
 
 namespace SEDiscordBridge.Storage
 {
@@ -70,6 +71,7 @@ namespace SEDiscordBridge.Storage
             RegistryStorage.Save();
             SeasonMetaConfigStorage.Save();
             SeasonMetaResultStorage.Save();
+            RankingStorage.Save();
         }
 
         [XmlIgnore]
@@ -89,6 +91,16 @@ namespace SEDiscordBridge.Storage
             get
             {
                 return ProfessionStorage.Instance;
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public RankingStorage Ranking
+        {
+            get
+            {
+                return RankingStorage.Instance;
             }
         }
 

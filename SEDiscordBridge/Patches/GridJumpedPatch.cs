@@ -1,4 +1,5 @@
-﻿using Sandbox.Game.Entities;
+﻿using Microsoft.Win32;
+using Sandbox.Game.Entities;
 using Sandbox.Game.GameSystems;
 using Sandbox.Game.World;
 using SEDiscordBridge.Storage;
@@ -59,20 +60,18 @@ namespace SEDiscordBridge.Patches
                                 distance *= -1;
                             }
 
-                            var didJump = SEDBStorage.Instance.GetPlayerValue<bool>(player.Id.SteamId, PlayerStorage.KEY_DID_JUMP);
+                            var playerStorage = SEDBStorage.Instance.GetPlayer(player.Id.SteamId);
 
-                            if (Plugin.Config.DisplayOnlyFirstJumpMessage && didJump) return;
+                            if (Plugin.Config.DisplayOnlyFirstJumpMessage && playerStorage.DidJump) return;
 
-                            var msgToUse = didJump ? Plugin.Config.GridJumpMessage : Plugin.Config.FirstGridJumpMessage;
+                            var msgToUse = playerStorage.DidJump ? Plugin.Config.GridJumpMessage : Plugin.Config.FirstGridJumpMessage;
                             msgToUse = msgToUse.Replace("{g}", gridName);
                             msgToUse = msgToUse.Replace("{d}", distance.ToString("#0.0"));
                             Plugin.DDBridge.SendStatusMessage(player.DisplayName, player.Id.SteamId, msgToUse);
 
-                            SEDBStorage.Instance.SetPlayerValue<bool>(player.Id.SteamId, PlayerStorage.KEY_DID_JUMP, true);
-                            var jumpCount = SEDBStorage.Instance.GetPlayerValue<int>(player.Id.SteamId, PlayerStorage.KEY_JUMP_COUNT);
-                            SEDBStorage.Instance.SetPlayerValue<int>(player.Id.SteamId, PlayerStorage.KEY_JUMP_COUNT, jumpCount + 1);
-
-                            SEDBStorage.Save();
+                            playerStorage.DidJump = true;
+                            var jumpCount = playerStorage.JumpCount;
+                            playerStorage.JumpCount = jumpCount + 1;
                         }
                     }
                 }

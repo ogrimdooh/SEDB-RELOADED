@@ -86,6 +86,11 @@ namespace SEDiscordBridge.Storage.Registry
             return Users.Any(x => x.UserId == userId);
         }
 
+        public bool IsSteamUserRegistered(ulong steamId)
+        {
+            return Users.Any(x => x.SteamId == steamId);
+        }
+
         public bool FindUserBySteamId(ulong steamId, out ulong userId)
         {
             var u = Users.FirstOrDefault(x => x.SteamId == steamId);
@@ -101,6 +106,11 @@ namespace SEDiscordBridge.Storage.Registry
         public RegistredUserInfo GetUserInfo(ulong userId)
         {
             return Users.FirstOrDefault(x => x.UserId == userId);
+        }
+
+        public RegistredUserInfo GetSteamUserInfo(ulong steamId)
+        {
+            return Users.FirstOrDefault(x => x.SteamId == steamId);
         }
 
         public bool UserHasValidToken(ulong userId)
