@@ -280,6 +280,8 @@
     <Compile Include="Controllers\Economics\EconomyOverriding.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_Base.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeAcquisitionStrategy.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_TypeGridHaulingStrategy.cs" />
+    <Compile Include="Controllers\Economics\MyCustomContract_TypePvEBountyStrategy.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeRepairStrategy.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSalvageStrategy.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSearchStrategy.cs" />
@@ -327,6 +329,7 @@
     <Compile Include="Patches\CompetetiveContainerOpenedPatch.cs" />
     <Compile Include="Patches\ContainerOpenedPatch.cs" />
     <Compile Include="Patches\GridJumpedPatch.cs" />
+    <Compile Include="Patches\MyContractGridHaulingPatch.cs" />
     <Compile Include="Patches\PatchController.cs" />
     <Compile Include="Patches\PlayerJoinedPatch.cs" />
     <Compile Include="Patches\PlayerLeftPatch.cs" />

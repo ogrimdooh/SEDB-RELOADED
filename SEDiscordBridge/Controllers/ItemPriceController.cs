@@ -109,7 +109,7 @@ namespace SEDiscordBridge.Controllers
 
         public static readonly Vector2 STATION_BUY_VALUE_MULTIPLIER = new Vector2(0.65f, 0.75f);
         public static readonly Vector2 STATION_ORDER_VALUE_MULTIPLIER = new Vector2(0.75f, 1.25f);
-        public static readonly Vector2 STATION_SELL_VALUE_MULTIPLIER = new Vector2(1.25f, 1.35f);
+        public static readonly Vector2 STATION_SELL_VALUE_MULTIPLIER = new Vector2(0.75f, 1.25f);
 
         // 150 * 1.25 (6 - 1)
         public static readonly Dictionary<OreRarity, float> BASE_ORE_VALUE = new Dictionary<OreRarity, float>()
@@ -133,22 +133,22 @@ namespace SEDiscordBridge.Controllers
             { ItensConstants.SODIUM_ID, BASE_ORE_VALUE[OreRarity.Common] * BYPRODUCT_VALUE_MULTIPLIER },
             { ItensConstants.NITRATE_ID, BASE_ORE_VALUE[OreRarity.Uncommon] * BYPRODUCT_VALUE_MULTIPLIER },
             /* BASE FOODS */
-            { ItensConstants.COFFEE_ID, 1.24f },
-            { ItensConstants.FRUIT_ID, 1.24f },
-            { ItensConstants.POTATOES_ID, 1.24f },
-            { ItensConstants.VEGETABLES_ID, 1.189f },
-            { ItensConstants.MUSHROOMS_ID, 1.164f },
-            { ItensConstants.MAMMALMEATRAW_ID, 1.027f },
-            { ItensConstants.INSECTMEATRAW_ID, 0.856f },
+            { ItensConstants.COFFEE_ID, 12.50f },
+            { ItensConstants.FRUIT_ID, 8.75f },
+            { ItensConstants.POTATOES_ID, 9.95f },
+            { ItensConstants.VEGETABLES_ID, 7.25f },
+            { ItensConstants.MUSHROOMS_ID, 8.85f },
+            { ItensConstants.MAMMALMEATRAW_ID, 14.15f },
+            { ItensConstants.INSECTMEATRAW_ID, 8.25f },
             /* NOT CONSUMABLE FOODS */
-            { ItensConstants.GRAIN_ID, 1.264f },
-            { ItensConstants.ALGAE_ID, 0.273f },
+            { ItensConstants.GRAIN_ID, 11.25f },
+            { ItensConstants.ALGAE_ID, 2.75f },
             /* NOT PRODUCED MEALS */
-            { ItensConstants.MEALPACK_HARDTACK_ID, 17.5f },
-            { ItensConstants.MEALPACK_FOODPASTE_ID, 12.5f },
-            { ItensConstants.MEALPACK_CLANGCRUNCHIES_ID, 15f },
-            { ItensConstants.MEALPACK_BANANABEEF_ID, 22.5f },
-            { ItensConstants.MEALPACK_SYNTHLOAF_ID, 20f },
+            { ItensConstants.MEALPACK_HARDTACK_ID, 170.5f },
+            { ItensConstants.MEALPACK_FOODPASTE_ID, 120.5f },
+            { ItensConstants.MEALPACK_CLANGCRUNCHIES_ID, 150f },
+            { ItensConstants.MEALPACK_BANANABEEF_ID, 220.5f },
+            { ItensConstants.MEALPACK_SYNTHLOAF_ID, 200f },
             /* NOT MAPPED AMMO MAGAZINES */
             { ItensConstants.NATO_5P56X45MM_ID, 250.0f },
             /* PROTOTECH NOT FABRICATED */

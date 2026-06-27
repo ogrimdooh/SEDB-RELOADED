@@ -45,14 +45,47 @@ namespace SEDiscordBridge.Controllers.Economics
         public class ShopItemInfo
         {
 
+            public bool PrefabOrigin { get; set; }
+            public string PrefabName { get; set; }
+            public Vector2 PriceMultiplier { get; set; } = Vector2.One;
+
         }
 
         public static readonly Dictionary<UniqueEntityId, ShopItemInfo> SHOP_ITEMS = new Dictionary<UniqueEntityId, ShopItemInfo>()
         {
-            { ItensConstants.ZONECHIP_ID, new ShopItemInfo() { } },
-            { ItensConstants.DAWNDROPSIGNALEXPLORER_ID, new ShopItemInfo() { } },
-            { ItensConstants.DAWNDROPSIGNALLITE_ID, new ShopItemInfo() { } },
-            { ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, new ShopItemInfo() { } }
+            { 
+                ItensConstants.ZONECHIP_ID, 
+                new ShopItemInfo() 
+                { 
+                } 
+            },
+            { 
+                ItensConstants.DAWNDROPSIGNALEXPLORER_ID, 
+                new ShopItemInfo() 
+                { 
+                    PrefabOrigin = true,
+                    PrefabName = AK1EXPLORERROVER_SUBTYPEID,
+                    PriceMultiplier = new Vector2(0.85f, 0.95f)
+                } 
+            },
+            { 
+                ItensConstants.DAWNDROPSIGNALLITE_ID, 
+                new ShopItemInfo()
+                {
+                    PrefabOrigin = true,
+                    PrefabName = AK2CARGOROVER_SUBTYPEID,
+                    PriceMultiplier = new Vector2(0.75f, 0.85f)
+                } 
+            },
+            { 
+                ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, 
+                new ShopItemInfo()
+                {
+                    PrefabOrigin = true,
+                    PrefabName = AK3DROPPOD_SUBTYPEID,
+                    PriceMultiplier = new Vector2(0.65f, 0.75f)
+                } 
+            }
         };
 
 
@@ -88,7 +121,24 @@ namespace SEDiscordBridge.Controllers.Economics
                 finalAmount = (int)inv.AddMaxItems(finalAmount, ItensConstants.GetPhysicalObjectBuilder(key));
                 if (finalAmount > 0)
                 {
-                    var item = storeBlock.CreateStoreItem(key.DefinitionId, (int)finalAmount, def.MinimalPricePerUnit, StoreItemTypes.Offer);
+                    var price = def.MinimalPricePerUnit;
+                    if (SHOP_ITEMS[key].PrefabOrigin)
+                    {
+                        if (PrefabPriceController.AddPrefabToShop(SHOP_ITEMS[key].PrefabName, out PrefabPriceController.StationPrefabItem prefabInfo))
+                        {
+                            price = (int)(prefabInfo.BaseValue - prefabInfo.RepairCost);
+                        }
+                        else
+                        {
+                            Logging.Instance.LogWarning(typeof(EconomicsConstants), $"Failed to add prefab {SHOP_ITEMS[key].PrefabName} to store block {storeBlock.EntityId}. Using default price.");
+                        }
+                    }
+                    price = (int)(price * ItemPriceController.STATION_SELL_VALUE_MULTIPLIER.GetRandom());
+                    if (SHOP_ITEMS[key].PriceMultiplier != Vector2.One)
+                    {
+                        price = (int)(price * SHOP_ITEMS[key].PriceMultiplier.GetRandom());
+                    }
+                    var item = storeBlock.CreateStoreItem(key.DefinitionId, (int)finalAmount, price, StoreItemTypes.Offer);
                     storeBlock.InsertStoreItem(item);
                     Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Added item {key.DefinitionId} to store block {storeBlock.EntityId} with amount {finalAmount}.");
                 }
@@ -147,7 +197,9 @@ namespace SEDiscordBridge.Controllers.Economics
                 var targetStrategy = EconomyOverriding.GetRandomContractType(stationType, 
                     MyContractStrategyType.Search, 
                     MyContractStrategyType.Repair,
-                    MyContractStrategyType.Salvage);
+                    MyContractStrategyType.Salvage,
+                    MyContractStrategyType.GridHauling,
+                    MyContractStrategyType.PvEBounty);
                 if (targetStrategy == null)
                 {
                     Logging.Instance.LogWarning(typeof(EconomicsConstants), $"No contract strategy found for contract block {contractBlock.EntityId}.");
@@ -166,6 +218,10 @@ namespace SEDiscordBridge.Controllers.Economics
                 {
                     Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Successfully generated definitions for a contract for block {contractBlock.EntityId}.");
                     ContractSystemOverriding.AddContract(contract);
+                }
+                else
+                {
+                    Logging.Instance.LogWarning(typeof(EconomicsConstants), $"Failed to generate definitions of strategy {targetStrategy.GetType().Name} for a contract for block {contractBlock.EntityId}.");
                 }
             }
         }

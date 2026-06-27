@@ -9,11 +9,20 @@ namespace SEDiscordBridge.Controllers.Grids
 
         public static ArkGroundBaseController Instance { get; private set; }
 
-        public static void Init()
+        public static void Register()
         {
             if (Instance == null)
             {
                 Instance = new ArkGroundBaseController();
+            }
+            Instance.DoRegister();
+        }
+
+        public static void Init()
+        {
+            if (Instance == null)
+            {
+                Register();
             }
             Instance.DoInit();
         }
@@ -29,22 +38,22 @@ namespace SEDiscordBridge.Controllers.Grids
             return new ArkTerminalBocks<ArkGroundBaseController>(this) { Name = name };
         }
 
-        protected override long GetTargetGridId()
+        public override long GetTargetGridId()
         {
             return ServerFunctionalGridsStorage.Instance.GroundBaseEntityId;
         }
 
-        protected override StationType GetStationType()
+        public override StationType GetStationType()
         {
             return StationType.PlanetStation;
         }
 
-        protected override StationLevel GetStationLevel()
+        public override StationLevel GetStationLevel()
         {
             return StationLevel.Large;
         }
 
-        protected override FactionType GetFactionType()
+        public override FactionType GetFactionType()
         {
             return FactionType.All;
         }

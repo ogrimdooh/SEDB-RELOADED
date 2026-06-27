@@ -17,11 +17,39 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using VRage.Game;
+using VRage.Library.Utils;
 using VRageMath;
 using static SEDiscordBridge.Controllers.Grids.ArkLogisticRelayController;
 
 namespace SEDiscordBridge.Controllers.Grids
 {
+    public static class ActiveFunctionalGridController
+    {
+        public static ConcurrentDictionary<long, BaseFunctionalGridController> Controllers = new ConcurrentDictionary<long, BaseFunctionalGridController>();
+
+        public static void RegisterController(long gridId, BaseFunctionalGridController controller)
+        {
+            Controllers[gridId] = controller;
+            Logging.Instance.LogInfo(typeof(ActiveFunctionalGridController), $"RegisterController called : gridId={gridId} controller={controller.GetType().Name} | End count = {Controllers.Count}");
+        }
+
+        public static long GetGridIdByContractBlockId(long blockId)
+        {
+            var gridId = Controllers.Where(c => c.Value.ARKGRIDCONTRACTBLOCK != null && c.Value.ARKGRIDCONTRACTBLOCK.EntityId == blockId)
+                .Select(c => c.Key)
+                .FirstOrDefault();
+            return gridId;
+        }
+
+        public static BaseFunctionalGridController GetRandomFriendlyStation(long currentGridId)
+        {
+            var friendlyStations = Controllers.Where(c => c.Key != currentGridId)
+                .OrderBy(x => MyRandom.Instance.NextFloat())
+                .Select(x => x.Value)
+                .FirstOrDefault();
+            return friendlyStations;
+        }
+    }
     public abstract class BaseFunctionalGridController
     {
 
@@ -181,6 +209,7 @@ namespace SEDiscordBridge.Controllers.Grids
 
         protected void LoadInterfaces()
         {
+            TERMINAL_INTERFACES.Clear();
             AddInterface(INTERFACE_TYPE_HOME, HOME_INTERFACE);
             AddInterface(INTERFACE_TYPE_SESSIONEXPIDED, SESSIONEXPIRED_INTERFACE);
             AddInterface(INTERFACE_TYPE_SERVICESELECT, SERVICESELECT_INTERFACE);
@@ -606,12 +635,11 @@ Press ENTER to confirm selection.",
 
         }
 
-        protected MyCubeGrid ARKGRID;
-        protected IMyGridTerminalSystem ARKGRIDTERMINALSYSTEM;
-
-        protected MyStoreBlock ARKGRIDSTOREBLOCK;
-        protected MyCargoContainer ARKGRIDSTORECARGOBLOCK;
-        protected MyContractBlock ARKGRIDCONTRACTBLOCK;
+        public MyCubeGrid ARKGRID { get; protected set; }
+        public IMyGridTerminalSystem ARKGRIDTERMINALSYSTEM { get; protected set; }
+        public MyStoreBlock ARKGRIDSTOREBLOCK { get; protected set; }
+        public MyCargoContainer ARKGRIDSTORECARGOBLOCK { get; protected set; }
+        public MyContractBlock ARKGRIDCONTRACTBLOCK { get; protected set; }
 
         protected ConcurrentDictionary<int, IArkTerminalBocks> ARKGRIDTERMINALS = new ConcurrentDictionary<int, IArkTerminalBocks>();
 
@@ -622,10 +650,10 @@ Press ENTER to confirm selection.",
         protected bool canRun;
         protected ParallelTasks.Task task;
 
-        protected abstract long GetTargetGridId();
-        protected abstract StationType GetStationType();
-        protected abstract StationLevel GetStationLevel();
-        protected abstract FactionType GetFactionType();
+        public abstract long GetTargetGridId();
+        public abstract StationType GetStationType();
+        public abstract StationLevel GetStationLevel();
+        public abstract FactionType GetFactionType();
         protected abstract Vector2 GetEconomyCycleTime();
 
         protected abstract IArkTerminalBocks CreateNewTerminalBlock(string name);
@@ -655,8 +683,8 @@ Press ENTER to confirm selection.",
             return (DateTime.Now - _lastEconomyCycle).TotalMilliseconds >= _economyCycleTime;
         }
 
-        protected bool _initialized = false;
-        protected void DoInit()
+        protected bool _registred = false;
+        protected void DoRegister()
         {
             if (GetTargetGridId() == 0)
             {
@@ -664,13 +692,9 @@ Press ENTER to confirm selection.",
                 return;
             }
 
-            if (_initialized)
-            {
-                DoDispose();
-                _initialized = false;
-            }
-
             LoadInterfaces();
+
+            VALID_SERVICES.Clear();
             LoadServices();
 
             ARKGRID = MyEntities.GetEntityById(GetTargetGridId()) as MyCubeGrid;
@@ -679,6 +703,8 @@ Press ENTER to confirm selection.",
                 Logging.Instance.LogWarning(GetType(), $"ArkGrid EntityId={GetTargetGridId()} not valid!");
                 return;
             }
+
+            ActiveFunctionalGridController.RegisterController(GetTargetGridId(), this);
 
             if (FactionsController.ChangeGridOwnerToMainFaction(ARKGRID))
             {
@@ -705,12 +731,28 @@ Press ENTER to confirm selection.",
 
             ARKGRIDCONTRACTBLOCK = ARKGRID.GetFatBlocks<MyContractBlock>().FirstOrDefault();
 
-            DoEconomyCycle();
-
+            ARKGRIDCONNECTORS.Clear();
             foreach (var item in ARKGRID.GetFatBlocks<MyShipConnector>())
             {
                 ARKGRIDCONNECTORS[item.EntityId] = item;
             }
+
+            _registred = true;
+        }
+
+        protected bool _initialized = false;
+        protected void DoInit()
+        {
+            if (!_registred)
+                return;
+
+            if (_initialized)
+            {
+                DoDispose();
+                _initialized = false;
+            }
+
+            DoEconomyCycle();
 
             var groups = new List<IMyBlockGroup>();
             ARKGRIDTERMINALSYSTEM.GetBlockGroups(groups);

@@ -586,6 +586,10 @@ namespace SEDiscordBridge
                 FactionsController.ResetMainFactionBank();
                 EconomicsConstants.Init();
                 ItemPriceController.Init();
+                /* Registra */
+                ArkLogisticRelayController.Register();
+                ArkGroundBaseController.Register();
+                /* Inicializa */
                 ArkLogisticRelayController.Init();
                 ArkGroundBaseController.Init();
             }

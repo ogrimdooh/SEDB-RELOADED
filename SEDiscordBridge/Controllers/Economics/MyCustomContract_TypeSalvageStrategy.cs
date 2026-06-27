@@ -9,6 +9,7 @@ using Sandbox.Game.World.Generator;
 using SEDiscordBridge.Controllers.Types;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using VRage;
 using VRage.Game;
 using VRage.Game.Definitions.SessionComponents;
@@ -59,7 +60,7 @@ namespace SEDiscordBridge.Controllers.Economics
                 List<MyPlanet> list = new List<MyPlanet>();
                 foreach (MyPlanet item in planets)
                 {
-                    if (item.Generator.AllowContractSpawns && Vector3D.Distance(position, item.PositionComp.GetPosition()) <= myContractTypeSalvageDefinition.MaxPlanetRange.Value)
+                    if (Vector3D.Distance(position, item.PositionComp.GetPosition()) <= myContractTypeSalvageDefinition.MaxPlanetRange.Value)
                     {
                         list.Add(item);
                     }
@@ -105,7 +106,7 @@ namespace SEDiscordBridge.Controllers.Economics
                 Vector3D planetPosition = myPlanet.PositionComp.GetPosition();
                 bool flag = false;
                 List<MySpawnGroupDefinition> list3 = new List<MySpawnGroupDefinition>();
-                for (int i = 0; i < 20; i++)
+                for (int i = 0; i < 40; i++)
                 {
                     Vector3D vector3D2 = Vector3D.Normalize(MyUtils.GetRandomVector3D());
                     Vector3D surfacePosition = myPlanet.GetClosestSurfacePointGlobal(planetPosition + vector3D2 * myPlanet.AverageRadius);
@@ -230,7 +231,22 @@ namespace SEDiscordBridge.Controllers.Economics
 
         public override bool CanBeGenerated(StationType stationType, MyFaction faction)
         {
-            return true;
+            if (!(m_contractTypeDefinition is MyContractTypeSalvageDefinition myContractTypeSalvageDefinition))
+            {
+                return false;
+            }
+
+            switch (stationType)
+            {
+                case StationType.PlanetStation:
+                    return myContractTypeSalvageDefinition.MaxPlanetRange.HasValue && MyPlanets.GetPlanets().Any();
+                case StationType.AsteroidFieldStation:
+                case StationType.OrbitalStation:
+                case StationType.DeepSpaceStation:
+                    return !myContractTypeSalvageDefinition.MaxPlanetRange.HasValue;
+            }
+
+            return false;
         }
 
         private static void FilterByVoxelMaterial(List<MySpawnGroupDefinition> groups, MyPlanet planet, ref Vector3D surfacePosition, List<MySpawnGroupDefinition> result)

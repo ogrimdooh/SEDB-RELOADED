@@ -4,6 +4,7 @@ using Sandbox.Game.World;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using VRage.Game.ModAPI;
 
 namespace SEDiscordBridge.Controllers.Economics
 {
@@ -75,6 +76,16 @@ namespace SEDiscordBridge.Controllers.Economics
                 else if (contract is MyContractSalvage myContractSalvage)
                 {
                     Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Contract is a salvage contract with grid position {myContractSalvage.GridPosition} and prefab name {myContractSalvage.PrefabName}.");
+                    _addContractMethod.Invoke(Component, new object[] { contract });
+                }
+                else if (contract is MyContractPvEBounty myContractPvEBounty)
+                {
+                    Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Contract is a PvE bounty contract with grid position {myContractPvEBounty.TargetPosition} and prefab name {(myContractPvEBounty as IMyContractPvEBounty).TargetSpawnGroup.SubtypeName}.");
+                    _addContractMethod.Invoke(Component, new object[] { contract });
+                }
+                else if (contract is MyContractGridHauling myContractGridHauling)
+                {
+                    Logging.Instance.LogInfo(typeof(EconomicsConstants), $"Contract is a grid hauling contract with grid position {myContractGridHauling.GridPosition} and deliver distance {myContractGridHauling.DeliverDistance}.");
                     _addContractMethod.Invoke(Component, new object[] { contract });
                 }
                 else

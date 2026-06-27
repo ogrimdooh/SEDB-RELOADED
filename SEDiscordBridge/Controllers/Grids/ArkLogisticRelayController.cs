@@ -26,11 +26,20 @@ namespace SEDiscordBridge.Controllers.Grids
 
         public static ArkLogisticRelayController Instance { get; private set; }
 
-        public static void Init()
+        public static void Register()
         {
             if (Instance == null)
             {
                 Instance = new ArkLogisticRelayController();
+            }
+            Instance.DoRegister();
+        }
+
+        public static void Init()
+        {
+            if (Instance == null)
+            {
+                Register();
             }
             Instance.DoInit();
         }
@@ -73,22 +82,22 @@ and added to the current Ark Jump objectives.
             return new ArkTerminalBocks<ArkLogisticRelayController>(this) { Name = name };
         }
 
-        protected override long GetTargetGridId()
+        public override long GetTargetGridId()
         {
             return ServerFunctionalGridsStorage.Instance.LogisticRelayEntityId;
         }
 
-        protected override StationType GetStationType()
+        public override StationType GetStationType()
         {
             return StationType.OrbitalStation;
         }
 
-        protected override StationLevel GetStationLevel()
+        public override StationLevel GetStationLevel()
         {
             return StationLevel.Large;
         }
 
-        protected override FactionType GetFactionType()
+        public override FactionType GetFactionType()
         {
             return FactionType.All;
         }

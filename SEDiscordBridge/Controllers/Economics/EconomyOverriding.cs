@@ -85,13 +85,23 @@ namespace SEDiscordBridge.Controllers.Economics
                         //m_contractTypeStrategies.Add(key, new MyContractTypeBountyStrategy(economyDefinition, value));
                         break;
                     case MyContractStrategyType.GridHauling:
-                        //m_contractTypeStrategies.Add(key, new MyContractTypeGridHaulingStrategy(economyDefinition, value));
+                        m_contractTypeStrategies.Add(key, new MyCustomContract_TypeGridHaulingStrategy(Definition, value));
+                        if (!m_contractsByStrategy.ContainsKey(MyContractStrategyType.GridHauling))
+                        {
+                            m_contractsByStrategy.Add(MyContractStrategyType.GridHauling, new List<MyDefinitionId>());
+                        }
+                        m_contractsByStrategy[MyContractStrategyType.GridHauling].Add(key);
                         break;
                     case MyContractStrategyType.Hauling:
                         //m_contractTypeStrategies.Add(key, new MyContractTypeHaulingStrategy(economyDefinition, value));
                         break;
                     case MyContractStrategyType.PvEBounty:
-                        //m_contractTypeStrategies.Add(key, new MyContractTypePvEBountyStrategy(economyDefinition, value));
+                        m_contractTypeStrategies.Add(key, new MyCustomContract_TypePvEBountyStrategy(Definition, value));
+                        if (!m_contractsByStrategy.ContainsKey(MyContractStrategyType.PvEBounty))
+                        {
+                            m_contractsByStrategy.Add(MyContractStrategyType.PvEBounty, new List<MyDefinitionId>());
+                        }
+                        m_contractsByStrategy[MyContractStrategyType.PvEBounty].Add(key);
                         break;
                     case MyContractStrategyType.Repair:
                         m_contractTypeStrategies.Add(key, new MyCustomContract_TypeRepairStrategy(Definition, value));
