@@ -288,6 +288,304 @@ namespace SEDiscordBridge
             return roleData;
         }
 
+        private const string COMBAT_PIRATE_NEUTRALIZED_ALERT = @":crossed_swords: **D.A.W.N. Combat Report**
+
+Explorer {0} has neutralized a pirate vessel threatening Ark operations.
+
+**Target:** `{1}`
+**Threat Class:** `{2}`
+**Reward Issued:** `{3}`
+**Operation Status:** `Confirmed Kill`
+
+{4}
+
+The surrounding sector is now safer for Ark logistics and exploration crews.
+
+---";
+
+        private const string COMBAT_PIRATE_NEUTRALIZED_RISK_ALERT = @":skull_crossbones: **D.A.W.N. Threat Elimination Report**
+
+Explorer {0} has destroyed a high-risk pirate vessel during an authorized combat contract.
+
+**Target:** `{1}`
+**Threat Class:** `{2}`
+**Reward Issued:** `{3}`
+**Operation Status:** `Confirmed Kill`
+
+{4}
+
+The Second Dawn records this operation as a confirmed contribution to fleet security.
+
+---";
+
+        private const string COMBAT_PIRATE_START_RISK_ALERT = @":rotating_light: **D.A.W.N. Combat Advisory**
+
+Explorer {0} has accepted a high-risk anti-piracy contract.
+
+**Target:** `{1}`
+**Threat Class:** `{2}`
+**Reward Issued:** `{3}`
+
+Ark crews operating nearby are advised to monitor combat traffic and avoid the engagement zone unless assisting the operation.
+
+The hostile signal remains active.
+
+---";
+
+        private const string COMBAT_PIRATE_FAILED_RISK_ALERT = @":rotating_light: **D.A.W.N. Combat Advisory**
+
+Anti-piracy operation against **{0}** has ended without confirmed neutralization.
+
+**Assigned Explorer:** {1}
+**Threat Class:** `{2}`
+**Reward Issued:** `{3}`
+**Operation Status:** `{4}`
+
+The hostile signal may still be active. Ark crews are advised to avoid the engagement zone unless prepared for combat.
+
+The void keeps what is left unfinished.
+
+---";
+        
+        public enum CombatThreatClassification
+        {
+            Class1 = 0,
+            Class2 = 1,
+            Class3 = 2,
+            Class4 = 3,
+            Class5 = 4
+        }
+
+        private static Dictionary<CombatThreatClassification, string> COMBAT_CLASSIFICATION = new Dictionary<CombatThreatClassification, string>()
+        {
+            { CombatThreatClassification.Class1, "Class I — Raider Contact" },
+            { CombatThreatClassification.Class2, "Class II — Armed Interceptor" },
+            { CombatThreatClassification.Class3, "Class III — Pirate Warship" },
+            { CombatThreatClassification.Class4, "Class IV — Siege Vessel" },
+            { CombatThreatClassification.Class5, "Class V — Ark-Level Threat" }
+        };
+
+        private static Dictionary<CombatThreatClassification, Vector2> COMBAT_CLASSIFICATION_REWARD_RANGE = new Dictionary<CombatThreatClassification, Vector2>()
+        {
+            { CombatThreatClassification.Class1, new Vector2(0, 400000) },
+            { CombatThreatClassification.Class2, new Vector2(400000, 800000) },
+            { CombatThreatClassification.Class3, new Vector2(800000, 1600000) },
+            { CombatThreatClassification.Class4, new Vector2(1600000, 3200000) },
+            { CombatThreatClassification.Class5, new Vector2(3200000, float.MaxValue) }
+        };
+
+        private static Dictionary<CombatThreatClassification, List<string>> COMBAT_CLASSIFICATION_MSGS = new Dictionary<CombatThreatClassification, List<string>>()
+        {
+            {
+                CombatThreatClassification.Class1,
+                new List<string>()
+                {
+                    "D.A.W.N. confirms the hostile raider signal has been removed from local sensors.",
+                    "A minor pirate contact has been neutralized before it could threaten nearby crews.",
+                    "The engagement has been logged as a successful patrol action against light raider activity.",
+                    "Local traffic routes are clear. The hostile signature has gone silent.",
+                    "The Second Dawn recognizes this action as a contribution to surface-sector security."
+                }
+            },
+            {
+                CombatThreatClassification.Class2,
+                new List<string>()
+                {
+                    "D.A.W.N. confirms the armed interceptor has been destroyed and its pursuit pattern terminated.",
+                    "A mobile pirate threat has been removed from the navigation grid.",
+                    "The hostile vessel was capable of intercepting Ark crews. Its destruction improves regional safety.",
+                    "Combat telemetry indicates a clean elimination of an active pirate strike craft.",
+                    "The Ark logistics network reports reduced risk along nearby travel corridors."
+                }
+            },
+            {
+                CombatThreatClassification.Class3,
+                new List<string>()
+                {
+                    "D.A.W.N. confirms destruction of a pirate warship-class contact. This victory has been added to the Ark combat ledger.",
+                    "The hostile weapons platform has gone dark. Ark crews operating in the sector face reduced combat risk.",
+                    "A significant pirate asset has been removed from the field.",
+                    "The Second Dawn recognizes this operation as a major contribution to regional defense.",
+                    "Combat logs show the enemy vessel was heavily armed. Its loss will disrupt pirate operations in the area."
+                }
+            },
+            {
+                CombatThreatClassification.Class4,
+                new List<string>()
+                {
+                    "D.A.W.N. confirms the siege vessel has been neutralized. Ark Command has marked the operation as high-value.",
+                    "A hostile platform capable of threatening outposts and logistics routes has been destroyed.",
+                    "The enemy contact represented a severe risk to Ark infrastructure. Its signal has been permanently silenced.",
+                    "Multiple Ark security systems have downgraded the sector threat level following this engagement.",
+                    "The Second Dawn records this victory as a decisive blow against organized pirate forces."
+                }
+            },
+            {
+                CombatThreatClassification.Class5,
+                new List<string>()
+                {
+                    "D.A.W.N. confirms elimination of an Ark-level threat. This operation will be preserved in the combat records of The Second Dawn.",
+                    "The hostile signature was classified as a direct danger to Ark operations. Its destruction has stabilized the sector.",
+                    "Ark Command has elevated this victory to strategic importance. The route ahead is safer because of this action.",
+                    "The enemy vessel carried enough firepower to threaten major operations. Its loss will be felt across pirate networks.",
+                    "The Second Dawn recognizes this engagement as an exceptional act of defense. The Ark remembers those who stand against the void."
+                }
+            }
+        };
+
+        private static CombatThreatClassification GetCombatThreatClassification(long reward)
+        {
+            var itemClass = (int)COMBAT_CLASSIFICATION_REWARD_RANGE.FirstOrDefault(x => reward >= x.Value.X && reward < x.Value.Y).Key;
+            return (CombatThreatClassification)itemClass;
+        }
+
+        private static string GetRandomClassificationMsg(CombatThreatClassification classification)
+        {
+            return COMBAT_CLASSIFICATION_MSGS[classification].OrderBy(x => MyRandom.Instance.NextFloat()).FirstOrDefault();
+        }
+
+        private static string GetCombatMsg(CombatThreatClassification classification)
+        {
+            switch (classification)
+            {
+                case CombatThreatClassification.Class4:
+                case CombatThreatClassification.Class5:
+                    return COMBAT_PIRATE_NEUTRALIZED_RISK_ALERT;
+                case CombatThreatClassification.Class1:
+                case CombatThreatClassification.Class2:
+                case CombatThreatClassification.Class3:
+                default:
+                    return COMBAT_PIRATE_NEUTRALIZED_ALERT;
+            }
+        }
+
+        private static bool NeedStartCombatAlert(CombatThreatClassification classification)
+        {
+            switch (classification)
+            {
+                case CombatThreatClassification.Class4:
+                case CombatThreatClassification.Class5:
+                    return true;
+                case CombatThreatClassification.Class1:
+                case CombatThreatClassification.Class2:
+                case CombatThreatClassification.Class3:
+                default:
+                    return false;
+            }
+        }
+
+        private static bool NeedFailedCombatAlert(CombatThreatClassification classification)
+        {
+            switch (classification)
+            {
+                case CombatThreatClassification.Class4:
+                case CombatThreatClassification.Class5:
+                    return true;
+                case CombatThreatClassification.Class1:
+                case CombatThreatClassification.Class2:
+                case CombatThreatClassification.Class3:
+                default:
+                    return false;
+            }
+        }
+
+        public void AlertBountyPVEIsCompleted(ulong steamId, string targetName, long reward)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId))
+            {
+                if (SEDBStorage.Instance.Registry.FindUserBySteamId(steamId, out ulong userId))
+                {
+                    var user = DiscordBridge.Discord.GetUserAsync(userId).Result;
+                    var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                    if (channel != null && user != null)
+                    {
+                        Log.Info("Sending new delivery message to the channel...");
+                        var classification = GetCombatThreatClassification(reward);
+                        var msg = string.Format(GetCombatMsg(classification),
+                            $"@{user.Username}",
+                            targetName,
+                            COMBAT_CLASSIFICATION[classification],
+                            reward.ToString("N2"),
+                            GetRandomClassificationMsg(classification)
+                        );
+
+                        msg = DDBridge.MentionNameToID(msg);
+
+                        MsgWorker.SendToDiscord(channel, msg, true);
+                    }
+                }
+            }
+        }
+
+        public void AlertBountyPVEStart(ulong steamId, string targetName, long reward)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId))
+            {
+                if (SEDBStorage.Instance.Registry.FindUserBySteamId(steamId, out ulong userId))
+                {
+                    var user = DiscordBridge.Discord.GetUserAsync(userId).Result;
+                    var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                    if (channel != null && user != null)
+                    {
+                        Log.Info("Sending new delivery message to the channel...");
+                        var classification = GetCombatThreatClassification(reward);
+                        if (NeedStartCombatAlert(classification))
+                        {
+                            var msg = string.Format(COMBAT_PIRATE_START_RISK_ALERT,
+                                $"@{user.Username}",
+                                targetName,
+                                COMBAT_CLASSIFICATION[classification],
+                                reward.ToString("N2")
+                            );
+
+                            msg = DDBridge.MentionNameToID(msg);
+
+                            MsgWorker.SendToDiscord(channel, msg, true);
+                        } 
+                        else
+                        {
+                            Logging.Instance.LogInfo(GetType(), $"No need to send start alert for {targetName} with reward {reward} and classification {classification}");
+                        }
+                    }
+                }
+            }
+        }
+
+        public void AlertBountyPVEFailed(ulong steamId, string targetName, long reward, bool abandon)
+        {
+            if (!string.IsNullOrWhiteSpace(Config.AlertsChannelId))
+            {
+                if (SEDBStorage.Instance.Registry.FindUserBySteamId(steamId, out ulong userId))
+                {
+                    var user = DiscordBridge.Discord.GetUserAsync(userId).Result;
+                    var channel = DiscordBridge.Discord.GetChannelAsync(ulong.Parse(Config.AlertsChannelId)).Result;
+                    if (channel != null && user != null)
+                    {
+                        Log.Info("Sending new delivery message to the channel...");
+                        var classification = GetCombatThreatClassification(reward);
+                        if (NeedFailedCombatAlert(classification))
+                        {
+                            var msg = string.Format(COMBAT_PIRATE_FAILED_RISK_ALERT,
+                                targetName,
+                                $"@{user.Username}",
+                                COMBAT_CLASSIFICATION[classification],
+                                reward.ToString("N2"),
+                                abandon ? "Abandoned" : "Failed"
+                            );
+
+                            msg = DDBridge.MentionNameToID(msg);
+
+                            MsgWorker.SendToDiscord(channel, msg, true);
+                        }
+                        else
+                        {
+                            Logging.Instance.LogInfo(GetType(), $"No need to send start alert for {targetName} with reward {reward} and classification {classification}");
+                        }
+                    }
+                }
+            }
+        }
+
         private const string SEASON_META_DELIVERY_ALERT = @":package: D.A.W.N. Logistics Update
 
 Explorer {0} has completed a cargo delivery to The Second Dawn.

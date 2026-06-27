@@ -3,6 +3,7 @@ using Sandbox.Game.Entities;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.EntityComponents;
+using Sandbox.Game.GameSystems.BankingAndCurrency;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Controllers.Economics;
@@ -17,39 +18,12 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using VRage.Game;
-using VRage.Library.Utils;
 using VRageMath;
 using static SEDiscordBridge.Controllers.Grids.ArkLogisticRelayController;
 
 namespace SEDiscordBridge.Controllers.Grids
 {
-    public static class ActiveFunctionalGridController
-    {
-        public static ConcurrentDictionary<long, BaseFunctionalGridController> Controllers = new ConcurrentDictionary<long, BaseFunctionalGridController>();
 
-        public static void RegisterController(long gridId, BaseFunctionalGridController controller)
-        {
-            Controllers[gridId] = controller;
-            Logging.Instance.LogInfo(typeof(ActiveFunctionalGridController), $"RegisterController called : gridId={gridId} controller={controller.GetType().Name} | End count = {Controllers.Count}");
-        }
-
-        public static long GetGridIdByContractBlockId(long blockId)
-        {
-            var gridId = Controllers.Where(c => c.Value.ARKGRIDCONTRACTBLOCK != null && c.Value.ARKGRIDCONTRACTBLOCK.EntityId == blockId)
-                .Select(c => c.Key)
-                .FirstOrDefault();
-            return gridId;
-        }
-
-        public static BaseFunctionalGridController GetRandomFriendlyStation(long currentGridId)
-        {
-            var friendlyStations = Controllers.Where(c => c.Key != currentGridId)
-                .OrderBy(x => MyRandom.Instance.NextFloat())
-                .Select(x => x.Value)
-                .FirstOrDefault();
-            return friendlyStations;
-        }
-    }
     public abstract class BaseFunctionalGridController
     {
 
@@ -156,6 +130,11 @@ namespace SEDiscordBridge.Controllers.Grids
         public readonly static InterfaceType INTERFACE_TYPE_SERVICESELECT = "SERVICESELECT";
         public readonly static InterfaceType INTERFACE_TYPE_NOVESSELCONNECTED = "NOVESSELCONNECTED";
         public readonly static InterfaceType INTERFACE_TYPE_SELECTVESSEL = "SELECTVESSEL";
+        public readonly static InterfaceType INTERFACE_TYPE_SCANREPAIR = "SCANREPAIR";
+        public readonly static InterfaceType INTERFACE_TYPE_CONFIRMREPAIR = "CONFIRMREPAIR";
+        public readonly static InterfaceType INTERFACE_TYPE_NODAMAGEFOUND = "NODAMAGEFOUND";
+        public readonly static InterfaceType INTERFACE_TYPE_INSUFFICIENTFUNDS = "INSUFFICIENTFUNDS";
+        public readonly static InterfaceType INTERFACE_TYPE_REPAIRDONE = "REPAIRDONE";
 
         public struct ServiceType : IEquatable<string>
         {
@@ -185,15 +164,45 @@ namespace SEDiscordBridge.Controllers.Grids
         }
 
         public readonly static ServiceType TERMINAL_SERVICE_TYPE_NONE = "NONE";
+        public readonly static ServiceType TERMINAL_SERVICE_TYPE_REPAIRVESSEL = "REPAIRVESSEL";
 
         protected ConcurrentDictionary<ServiceType, ArkTerminalService> VALID_SERVICES = new ConcurrentDictionary<ServiceType, ArkTerminalService>();
+
+        protected readonly ArkTerminalService TERMINAL_SERVICE_REPAIRVESSEL = new ArkTerminalService(
+            "repair service",
+            @"Use this system to request D.A.W.N. repair
+support for a connected vessel.
+
+Repair cost is calculated from missing and 
+damaged blocks.
+
+",
+            (controller, terminal) => {
+                var grids = controller.GetConnectedGridsByPlayerId(terminal.LoggedPlayer);
+                if (!grids.Any())
+                    return INTERFACE_TYPE_NOVESSELCONNECTED;
+                if (grids.Count > 1)
+                {
+                    terminal.SetValue("next_interface", INTERFACE_TYPE_SCANREPAIR);
+                    return INTERFACE_TYPE_SELECTVESSEL;
+                }
+                return INTERFACE_TYPE_SCANREPAIR;
+            }
+        );
 
         protected void AddService(ServiceType type, ArkTerminalService service)
         {
             VALID_SERVICES[type] = service;
         }
 
-        protected abstract void LoadServices();
+        protected abstract void OnLoadServices();
+
+        protected void LoadServices()
+        {
+            VALID_SERVICES.Clear();
+            AddService(TERMINAL_SERVICE_TYPE_REPAIRVESSEL, TERMINAL_SERVICE_REPAIRVESSEL);
+            OnLoadServices();
+        }
 
         protected static readonly InterfaceType START_INTERFACE = INTERFACE_TYPE_HOME;
         protected static readonly InterfaceType EXPIRED_INTERFACE = INTERFACE_TYPE_SESSIONEXPIDED;
@@ -215,6 +224,11 @@ namespace SEDiscordBridge.Controllers.Grids
             AddInterface(INTERFACE_TYPE_SERVICESELECT, SERVICESELECT_INTERFACE);
             AddInterface(INTERFACE_TYPE_NOVESSELCONNECTED, NOVESSELCONNECTED_INTERFACE);
             AddInterface(INTERFACE_TYPE_SELECTVESSEL, VESSELCONNECTED_INTERFACE);
+            AddInterface(INTERFACE_TYPE_SCANREPAIR, SCANREPAIR_INTERFACE);
+            AddInterface(INTERFACE_TYPE_CONFIRMREPAIR, CONFIRMREPAIR_INTERFACE);
+            AddInterface(INTERFACE_TYPE_NODAMAGEFOUND, NODAMAGEFOUND_INTERFACE);
+            AddInterface(INTERFACE_TYPE_INSUFFICIENTFUNDS, INSUFFICIENTFUNDS_INTERFACE);
+            AddInterface(INTERFACE_TYPE_REPAIRDONE, REPAIRDONE_INTERFACE);
             OnLoadInterfaces();
         }
 
@@ -237,7 +251,7 @@ namespace SEDiscordBridge.Controllers.Grids
             }
         }
 
-        protected static void DoSetVessel<C>(C controller, IArkTerminalBocks tInterface, int index) where C : BaseFunctionalGridController
+        protected static MyCubeGrid DoSetVessel<C>(C controller, IArkTerminalBocks tInterface, int index) where C : BaseFunctionalGridController
         {
             tInterface.SetValue("vessel_index", index);
             tInterface.SetValue("vessel_position", index + 1);
@@ -247,10 +261,12 @@ namespace SEDiscordBridge.Controllers.Grids
             {
                 tInterface.SetValue("vessel_name", grids[index].DisplayName);
                 tInterface.SetValue("vessel_id", grids[index].EntityId);
+                return grids[index];
             }
             else
             {
                 tInterface.SetValue("vessel_name", "ERROR");
+                return null;
             }
         }
 
@@ -270,7 +286,7 @@ namespace SEDiscordBridge.Controllers.Grids
 
         protected static ArkTerminalInterface HOME_INTERFACE = new ArkTerminalInterface()
         {
-            Text = @"ARK RESOURCE DELIVERY
+            Text = @"ARK TERMINAL SYSTEM
 
 Ark network synchronized.
 
@@ -299,7 +315,7 @@ D.A.W.N. session.",
 
         protected static ArkTerminalInterface SESSIONEXPIRED_INTERFACE = new ArkTerminalInterface()
         {
-            Text = @"ARK RESOURCE DELIVERY
+            Text = @"ARK TERMINAL SYSTEM
 
 Session expired.
 
@@ -329,7 +345,7 @@ D.A.W.N. session.",
 
         private static ArkTerminalInterface SERVICESELECT_INTERFACE = new ArkTerminalInterface()
         {
-            Text = @"ARK RESOURCE DELIVERY
+            Text = @"ARK TERMINAL SYSTEM
 
 {text}
 
@@ -371,7 +387,7 @@ Press ENTER to access the {name}.",
 
         private static ArkTerminalInterface NOVESSELCONNECTED_INTERFACE = new ArkTerminalInterface()
         {
-            Text = @"ARK RESOURCE DELIVERY
+            Text = @"ARK TERMINAL SYSTEM
 
 No registered vessel is currently connected to 
 this relay.
@@ -395,7 +411,7 @@ connector before starting cargo transfer.
 
         private static ArkTerminalInterface VESSELCONNECTED_INTERFACE = new ArkTerminalInterface()
         {
-            Text = @"ARK RESOURCE DELIVERY
+            Text = @"ARK TERMINAL SYSTEM
 
 Multiple registered vessels detected.
 
@@ -418,7 +434,7 @@ Press ENTER to confirm selection.",
                 var index = terminal.GetValue<int>("vessel_index");
                 var vessel_name = terminal.GetValue<string>("vessel_name");
                 if (vessel_name == "ERROR")
-                    return INTERFACE_TYPE_CARGOTRANSFERERROR;
+                    return INTERFACE_TYPE_NOVESSELCONNECTED;
                 var grids = controller.GetConnectedGridsByPlayerId(terminal.LoggedPlayer);
                 switch (action)
                 {
@@ -435,12 +451,188 @@ Press ENTER to confirm selection.",
                             index = 0;
                         break;
                     case ArkTerminalAction.Enter:
-                        return INTERFACE_TYPE_SELECTCARGOTRANSFERSCOPE;
+                        var targetInterface = terminal.GetValue<InterfaceType>("next_interface");
+                        return targetInterface;
                     case ArkTerminalAction.Num1:
                         return INTERFACE_TYPE_SERVICESELECT;
                 }
                 DoSetVessel(controller, terminal, index);
                 return INTERFACE_TYPE_NONE;
+            }
+        };
+
+        private static ArkTerminalInterface SCANREPAIR_INTERFACE = new ArkTerminalInterface()
+        {
+            Text = @"ARK TERMINAL SYSTEM
+
+D.A.W.N. is scanning vessel: 
+{vessel_name}
+
+Checking armor damage,
+missing components,
+critical systems,
+and structural integrity.
+
+Please wait...",
+            ValidActions = new ArkTerminalAction[] { },
+            AutoInteractAfter = 5000,
+            OnOpen = (controller, terminal) =>
+            {
+                var index = terminal.GetValue<int>("vessel_index");
+                DoSetVessel(controller, terminal, index);
+            },
+            OnInteract = (controller, terminal, action, playerId) =>
+            {
+                var index = terminal.GetValue<int>("vessel_index");
+                var grid = DoSetVessel(controller, terminal, index);
+                var vessel_name = terminal.GetValue<string>("vessel_name");
+                if (vessel_name == "ERROR")
+                    return INTERFACE_TYPE_NOVESSELCONNECTED;
+
+                if (PrefabPriceController.CalcGridValue(grid, out float baseValue, out float repairValue, out float timeToRepair, out int damagedBlocks, out int deformedBlocks) && 
+                    (damagedBlocks + deformedBlocks) > 0)
+                {
+                    terminal.SetValue("cost", repairValue);
+                    terminal.SetValue("time_to_repair", timeToRepair);
+                    terminal.SetValue("damaged_blocks", damagedBlocks);
+                    terminal.SetValue("deformed_blocks", deformedBlocks);
+                    return INTERFACE_TYPE_CONFIRMREPAIR;
+                }
+
+                return INTERFACE_TYPE_NODAMAGEFOUND;
+            }
+        };
+
+        private static ArkTerminalInterface NODAMAGEFOUND_INTERFACE = new ArkTerminalInterface()
+        {
+            Text = @"ARK TERMINAL SYSTEM
+
+Repair scan complete.
+
+No structural damage detected.
+No repair action required.
+
+1 - Return",
+            BackgroundColor = Color.DarkRed,
+            FontColor = Color.White,
+            ValidActions = new ArkTerminalAction[] { ArkTerminalAction.Num1 },
+            OnOpen = (controller, terminal) =>
+            {
+
+            },
+            OnInteract = (controller, terminal, action, playerId) =>
+            {
+                return INTERFACE_TYPE_SERVICESELECT;
+            }
+        };
+
+        private static ArkTerminalInterface INSUFFICIENTFUNDS_INTERFACE = new ArkTerminalInterface()
+        {
+            Text = @"ARK TERMINAL SYSTEM
+
+INSUFFICIENT FUNDS
+
+Required funds:
+{cost} Credits
+
+Available funds:
+{balance} Credits
+
+1 - Return",
+            BackgroundColor = Color.DarkRed,
+            FontColor = Color.White,
+            ValidActions = new ArkTerminalAction[] { ArkTerminalAction.Num1 },
+            OnOpen = (controller, terminal) =>
+            {
+
+            },
+            OnInteract = (controller, terminal, action, playerId) =>
+            {
+                return INTERFACE_TYPE_SERVICESELECT;
+            }
+        };
+        
+        private static ArkTerminalInterface CONFIRMREPAIR_INTERFACE = new ArkTerminalInterface()
+        {
+            Text = @"ARK TERMINAL SYSTEM
+
+Repair estimate complete.
+
+Vessel: {vessel_name}
+
+Damaged blocks: {damaged_blocks}
+Deformed blocks: {deformed_blocks}
+Estimated cost: {cost} Credits
+
+Confirm repair operation?
+
+1 - Confirm
+2 - Decline",
+            ValidActions = new ArkTerminalAction[] { ArkTerminalAction.Num1, ArkTerminalAction.Num2 },
+            OnOpen = (controller, terminal) =>
+            {
+                var index = terminal.GetValue<int>("vessel_index");
+                DoSetVessel(controller, terminal, index);
+            },
+            OnInteract = (controller, terminal, action, playerId) =>
+            {
+                var index = terminal.GetValue<int>("vessel_index");
+                var grid = DoSetVessel(controller, terminal, index);
+                var vessel_name = terminal.GetValue<string>("vessel_name");
+                if (vessel_name == "ERROR")
+                    return INTERFACE_TYPE_NOVESSELCONNECTED;
+                switch (action)
+                {
+                    case ArkTerminalAction.Num1:
+                        var cost = (long)terminal.GetValue<float>("cost");
+                        var balance = MyBankingSystem.GetBalance(terminal.LoggedPlayer);
+                        if (cost > balance)
+                        {
+                            terminal.SetValue("balance", balance);
+                            return INTERFACE_TYPE_INSUFFICIENTFUNDS;
+                        }
+                        if (MyBankingSystem.ChangeBalance(terminal.LoggedPlayer, -cost))
+                        {
+                            if (ActiveFunctionalGridController.RepairAllGridBlocks(grid))
+                            {
+                                return INTERFACE_TYPE_REPAIRDONE;
+                            }
+                            else
+                            {
+                                MyBankingSystem.ChangeBalance(terminal.LoggedPlayer, cost);
+                            }
+                        }
+                        return INTERFACE_TYPE_NOVESSELCONNECTED;
+                    case ArkTerminalAction.Num2:
+                        return INTERFACE_TYPE_SERVICESELECT;
+                }
+                return INTERFACE_TYPE_NONE;
+            }
+        };
+
+        private static ArkTerminalInterface REPAIRDONE_INTERFACE = new ArkTerminalInterface()
+        {
+            Text = @"ARK TERMINAL SYSTEM
+
+Repair complete.
+
+Vessel: {vessel_name}
+Cost: {cost} Credits
+
+Structural integrity restored.
+The vessel is cleared for launch.
+
+1 - Return",
+            BackgroundColor = Color.DarkGreen,
+            FontColor = Color.White,
+            ValidActions = new ArkTerminalAction[] { ArkTerminalAction.Num1 },
+            OnOpen = (controller, terminal) =>
+            {
+
+            },
+            OnInteract = (controller, terminal, action, playerId) =>
+            {
+                return INTERFACE_TYPE_SERVICESELECT;
             }
         };
 
@@ -694,7 +886,6 @@ Press ENTER to confirm selection.",
 
             LoadInterfaces();
 
-            VALID_SERVICES.Clear();
             LoadServices();
 
             ARKGRID = MyEntities.GetEntityById(GetTargetGridId()) as MyCubeGrid;

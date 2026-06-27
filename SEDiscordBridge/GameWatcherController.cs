@@ -106,7 +106,39 @@ namespace SEDiscordBridge
 
         private static void ContractAccepted(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
         {
-
+            var contract = ContractSystemOverriding.GetContractById(contractId);
+            if (contract != null)
+            {
+                var steamId = MySession.Static.Players.TryGetSteamId(acceptingPlayerId);
+                MyAPIGateway.Parallel.Start(() =>
+                {
+                    if (contract is MyContractPvEBounty pvEBounty)
+                    {
+                        var prefabName = pvEBounty.GetType().GetMethod("GetPrefabName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(pvEBounty, null)?.ToString() ?? "";
+                        var enemyName = "Unknown";
+                        if (!string.IsNullOrWhiteSpace(prefabName))
+                        {
+                            if (!PrefabPriceController.AddPrefabToShop(prefabName, out var prefabItem))
+                            {
+                                Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: Prefab not found for Name={prefabName}");
+                            }
+                            else
+                            {
+                                enemyName = prefabItem.Definition.CubeGrids.FirstOrDefault()?.DisplayName ?? enemyName;
+                            }
+                        }
+                        else
+                        {
+                            Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: PrefabName is empty for ContractId={contractId}");
+                        }
+                        SEDiscordBridgePlugin.Static.AlertBountyPVEStart(steamId, enemyName, pvEBounty.RewardMoney);
+                    }
+                });
+            }
+            else
+            {
+                Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractAccepted: Contract not found for Id={contractId}");
+            }
         }
 
         private static void ContractFinished(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
@@ -150,6 +182,27 @@ namespace SEDiscordBridge
                             );
                         }
                     }
+                    else if (contract is MyContractPvEBounty pvEBounty)
+                    {
+                        var prefabName = pvEBounty.GetType().GetMethod("GetPrefabName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(pvEBounty, null)?.ToString() ?? "";
+                        var enemyName = "Unknown";
+                        if (!string.IsNullOrWhiteSpace(prefabName))
+                        {
+                            if (!PrefabPriceController.AddPrefabToShop(prefabName, out var prefabItem))
+                            {
+                                Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: Prefab not found for Name={prefabName}");
+                            }
+                            else
+                            {
+                                enemyName = prefabItem.Definition.CubeGrids.FirstOrDefault()?.DisplayName ?? enemyName;
+                            }
+                        }
+                        else
+                        {
+                            Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: PrefabName is empty for ContractId={contractId}");
+                        }
+                        SEDiscordBridgePlugin.Static.AlertBountyPVEIsCompleted(steamId, enemyName, pvEBounty.RewardMoney);
+                    }
                 });
             }
             else
@@ -158,14 +211,50 @@ namespace SEDiscordBridge
             }
         }
 
+        private static long lastFailedContractId = 0;
         private static void ContractFailed(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId, bool IsAbandon)
         {
-
+            if (lastFailedContractId == contractId)
+                return;
+            lastFailedContractId = contractId;
+            var contract = ContractSystemOverriding.GetContractById(contractId);
+            if (contract != null)
+            {
+                var steamId = MySession.Static.Players.TryGetSteamId(acceptingPlayerId);
+                MyAPIGateway.Parallel.Start(() =>
+                {
+                    if (contract is MyContractPvEBounty pvEBounty)
+                    {
+                        var prefabName = pvEBounty.GetType().GetMethod("GetPrefabName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.Invoke(pvEBounty, null)?.ToString() ?? "";
+                        var enemyName = "Unknown";
+                        if (!string.IsNullOrWhiteSpace(prefabName))
+                        {
+                            if (!PrefabPriceController.AddPrefabToShop(prefabName, out var prefabItem))
+                            {
+                                Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: Prefab not found for Name={prefabName}");
+                            }
+                            else
+                            {
+                                enemyName = prefabItem.Definition.CubeGrids.FirstOrDefault()?.DisplayName ?? enemyName;
+                            }
+                        }
+                        else
+                        {
+                            Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractFinished: PrefabName is empty for ContractId={contractId}");
+                        }
+                        SEDiscordBridgePlugin.Static.AlertBountyPVEFailed(steamId, enemyName, pvEBounty.RewardMoney, IsAbandon);
+                    }
+                });
+            }
+            else
+            {
+                Logging.Instance.LogWarning(typeof(GameWatcherController), $"ContractAccepted: Contract not found for Id={contractId}");
+            }
         }
 
         private static void ContractAbandoned(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
         {
-
+            ContractFailed(contractId, contractDefinitionId, acceptingPlayerId, isPlayerMade, startingBlockId, startingFactionId, startingStationId, true);
         }
 
         private static void ServerUpdateMsgHandler(ushort netId, byte[] data, ulong steamId, bool fromServer)
@@ -583,6 +672,7 @@ namespace SEDiscordBridge
                 {
                     Logging.Instance.LogWarning(typeof(GameWatcherController), "DDBridge not found when Session Ready!");
                 }
+                FactionsController.MakePirateFactionsEnemiesOfEveryOne();
                 FactionsController.ResetMainFactionBank();
                 EconomicsConstants.Init();
                 ItemPriceController.Init();

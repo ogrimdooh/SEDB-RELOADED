@@ -72,7 +72,10 @@ and added to the current Ark Jump objectives.
                 if (!grids.Any())
                     return INTERFACE_TYPE_NOVESSELCONNECTED;
                 if (grids.Count > 1)
+                {
+                    terminal.SetValue("next_interface", INTERFACE_TYPE_SELECTCARGOTRANSFERSCOPE);
                     return INTERFACE_TYPE_SELECTVESSEL;
+                }
                 return INTERFACE_TYPE_SELECTCARGOTRANSFERSCOPE;
             }
         );
@@ -107,7 +110,7 @@ and added to the current Ark Jump objectives.
             return new Vector2(1350, 2250);
         }
 
-        protected override void LoadServices()
+        protected override void OnLoadServices()
         {
             AddService(TERMINAL_SERVICE_TYPE_SUBMITRESOURCES, TERMINAL_SERVICE_SUBMITRESOURCES);
         }

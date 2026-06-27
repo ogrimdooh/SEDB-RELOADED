@@ -55,8 +55,9 @@ namespace SEDiscordBridge.Controllers.Economics
         {
             { 
                 ItensConstants.ZONECHIP_ID, 
-                new ShopItemInfo() 
-                { 
+                new ShopItemInfo()
+                {
+                    PriceMultiplier = new Vector2(0.15f, 0.30f)
                 } 
             },
             { 

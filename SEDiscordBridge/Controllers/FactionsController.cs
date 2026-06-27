@@ -127,6 +127,38 @@ namespace SEDiscordBridge.Controllers
             return true;
         }
 
+        public static void MakePirateFactionsEnemiesOfEveryOne()
+        {
+            List<MyFaction> list = new List<MyFaction>();
+            foreach (KeyValuePair<long, MyFaction> faction in MySession.Static.Factions)
+            {
+                if (faction.Value.IsEveryoneNpc() && faction.Value.FactionTypeString == MyFactionTypes.Pirate.ToString())
+                {
+                    list.Add(faction.Value);
+                }
+            }
+            if (list.Any())
+            {
+                foreach (var item in list)
+                {
+                    item.DefaultFactionRelationshipAndReputation = new System.Tuple<MyRelationsBetweenFactions, int>(MyRelationsBetweenFactions.Enemies, -1500);
+                    item.StartingReputation = -1500;
+                    foreach (KeyValuePair<long, MyFaction> faction in MySession.Static.Factions)
+                    {
+                        MySession.Static.Factions.SetReputationBetweenFactions(faction.Key, item.FactionId, -1500);
+                    }
+                    foreach (var player in MySession.Static.Players.GetAllPlayers())
+                    {
+                        var id = MySession.Static.Players.TryGetIdentityId(player.SteamId);
+                        if (id != 0)
+                        {
+                            MySession.Static.Factions.SetReputationBetweenPlayerAndFaction(id, item.FactionId, -1500, ReputationChangeReason.Admin);
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
 }

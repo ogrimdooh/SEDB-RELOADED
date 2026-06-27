@@ -286,6 +286,7 @@
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSalvageStrategy.cs" />
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSearchStrategy.cs" />
     <Compile Include="Controllers\FactionsController.cs" />
+    <Compile Include="Controllers\Grids\ActiveFunctionalGridController.cs" />
     <Compile Include="Controllers\PrefabPriceController.cs" />
     <Compile Include="Controllers\Rankings\BaseRankDefinition.cs" />
     <Compile Include="Controllers\Rankings\RankEntry.cs" />

@@ -1,5 +1,6 @@
 ﻿using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities;
 using SEDiscordBridge.Controllers.Types;
 using SEDiscordBridge.Entities.Base;
 using SEDiscordBridge.Extensions;
@@ -279,6 +280,37 @@ namespace SEDiscordBridge.Controllers
                 Logging.Instance.LogInfo(typeof(PrefabPriceController), $"AddPrefabToShop: {prefabName} : BASE VALUE = {prefabItem.BaseValue} : REPAIR VALUE = {prefabItem.RepairCost}");
             }
             return true;
+        }
+
+        public static bool CalcGridValue(MyCubeGrid grid, out float baseValue, out float repairValue, out float timeToRepair, out int damagedBlocks, out int deformedBlocks)
+        {
+            damagedBlocks = 0;
+            deformedBlocks = 0;
+            baseValue = 0f;
+            repairValue = 0f;
+            timeToRepair = 0f;
+            if (grid != null)
+            {
+                foreach (var block in grid.CubeBlocks)
+                {
+                    var value = GetCubeBlockBaseValue(block.BlockDefinition.Id, out float timeToBuild);
+                    baseValue += value;
+                    if (block.BuildLevelRatio != 1f)
+                    {
+                        damagedBlocks++;
+                        repairValue += value * (1f - block.BuildLevelRatio);
+                        timeToRepair += timeToBuild * (1f - block.BuildLevelRatio);
+                    }
+                    if (block.HasDeformation)
+                    {
+                        deformedBlocks++;
+                        repairValue += value * 0.025f;
+                        timeToRepair += timeToBuild * 0.025f;
+                    }
+                }
+                return true;
+            }
+            return false;
         }
 
         private static readonly ConcurrentDictionary<MyDefinitionId, float> _blockMaxStoredPower = new ConcurrentDictionary<MyDefinitionId, float>();

@@ -63,7 +63,7 @@ namespace SEDiscordBridge.Controllers.Grids
             return new Vector2(1350, 2250);
         }
 
-        protected override void LoadServices()
+        protected override void OnLoadServices()
         {
 
         }
