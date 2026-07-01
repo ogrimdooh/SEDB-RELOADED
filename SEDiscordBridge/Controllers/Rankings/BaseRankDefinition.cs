@@ -11,7 +11,7 @@ namespace SEDiscordBridge.Controllers.Rankings
         public abstract string GetFooter();
         public abstract string GetIcon();
         public abstract string GetIconForOrder(int order);
-        public abstract string GetValueFormated(string icon, string name, float value);
+        public abstract string GetValueFormated(string icon, string name, object value);
         public abstract List<RankEntry> GetEntries();
 
     }

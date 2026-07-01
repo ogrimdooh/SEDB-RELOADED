@@ -6,7 +6,7 @@
         public int Order { get; set; }
         public ulong SteamId { get; set; }
         public ulong UserId { get; set; }
-        public float Value { get; set; }
+        public object Value { get; set; }
 
     }
 }

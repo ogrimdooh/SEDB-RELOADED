@@ -11,6 +11,7 @@ using Sandbox.ModAPI;
 using SEDiscordBridge.Controllers;
 using SEDiscordBridge.Controllers.Economics;
 using SEDiscordBridge.Controllers.Grids;
+using SEDiscordBridge.Extensions;
 using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
 using SEDiscordBridge.Storage.FunctionalGrids;
@@ -54,6 +55,8 @@ namespace SEDiscordBridge
                 Dispose();
                 _initialized = false;
             }
+            Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to PlayerSpawned");
+            MyVisualScriptLogicProvider.PlayerSpawned += MyPlayer_Spawned;
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to PlayerDied");
             MyVisualScriptLogicProvider.PlayerDied += MyPlayer_Die;
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to RespawnShipSpawned");
@@ -101,7 +104,32 @@ namespace SEDiscordBridge
             Logging.Instance.LogInfo(typeof(GameWatcherController), "Added Watcher to MyEntities OnEntityRemove");
             MyEntities.OnEntityRemove += Entities_OnEntityRemove;
             ServerConsumablesController.Init();
+            GridObserverController.Init();
             _initialized = true;
+        }
+
+        private static void MyPlayer_Spawned(long playerId)
+        {
+            var player = MySession.Static.Players.TryGetPlayer(playerId);
+            if (player != null)
+            {
+                var playerStorage = SEDBStorage.Instance.GetPlayer(player.Id.SteamId);
+                if (!playerStorage.FirstSpawn)
+                {
+                    if (player.Character != null)
+                    {
+                        var inv = player.Character.GetInventory();
+                        if (inv.AddMaxItems(1f, ItensConstants.GetPhysicalObjectBuilder(ItensConstants.DAWNDROPSIGNALEXPLORER_ID)) > 0)
+                        {
+                            playerStorage.FirstSpawn = true;
+                        }
+                    }
+                    else
+                    {
+                        Logging.Instance.LogWarning(typeof(GameWatcherController), $"Player {player.Id.SteamId} spawned without a character.");
+                    }
+                }
+            }
         }
 
         private static void ContractAccepted(long contractId, MyDefinitionId contractDefinitionId, long acceptingPlayerId, bool isPlayerMade, long startingBlockId, long startingFactionId, long startingStationId)
@@ -167,6 +195,7 @@ namespace SEDiscordBridge
                     var completeContractCount = playerStorage.GetCompleteContractCount(definition.StrategyType);
                     playerStorage.SetCompleteContractCount(definition.StrategyType, completeContractCount + 1);
                     playerStorage.AllContractsCount = playerStorage.AllContractsCount + 1;
+                    playerStorage.Reputation += contract.RewardReputation;
                     // Register a donation when contract is a deliver one
                     if (contract is MyContractObtainAndDeliver obtainAndDeliver)
                     {
@@ -221,6 +250,8 @@ namespace SEDiscordBridge
             if (contract != null)
             {
                 var steamId = MySession.Static.Players.TryGetSteamId(acceptingPlayerId);
+                var playerStorage = SEDBStorage.Instance.GetPlayer(steamId);
+                playerStorage.Karma += (long)(Math.Abs(contract.FailReputationPrice) * (IsAbandon ? 1.5f : 1.0f));
                 MyAPIGateway.Parallel.Start(() =>
                 {
                     if (contract is MyContractPvEBounty pvEBounty)
@@ -771,6 +802,7 @@ namespace SEDiscordBridge
             {
                 Logging.Instance.LogError(typeof(GameWatcherController), ex);
             }
+            MyVisualScriptLogicProvider.PlayerSpawned -= MyPlayer_Spawned;
             MyVisualScriptLogicProvider.PlayerDied -= MyPlayer_Die;
             MyVisualScriptLogicProvider.RespawnShipSpawned -= MyEntities_RespawnShipSpawned;
             MyVisualScriptLogicProvider.ContractAccepted -= ContractAccepted;
@@ -801,6 +833,7 @@ namespace SEDiscordBridge
             MyEntities.OnEntityAdd -= Entities_OnEntityAdd;
             MyEntities.OnEntityRemove -= Entities_OnEntityRemove;
             ServerConsumablesController.Dispose();
+            GridObserverController.Dispose();
         }
 
         private static bool IsFactionChangeValidToMsg(MyFactionStateChange action, out int msgType)

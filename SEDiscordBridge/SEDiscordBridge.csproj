@@ -287,11 +287,18 @@
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSearchStrategy.cs" />
     <Compile Include="Controllers\FactionsController.cs" />
     <Compile Include="Controllers\Grids\ActiveFunctionalGridController.cs" />
+    <Compile Include="Controllers\Grids\GridObserverController.cs" />
+    <Compile Include="Controllers\Grids\MyCubeGridExtraData.cs" />
+    <Compile Include="Controllers\Players\PlayerLevelController.cs" />
+    <Compile Include="Controllers\Players\PlayerLevelInfo.cs" />
     <Compile Include="Controllers\PrefabPriceController.cs" />
     <Compile Include="Controllers\Rankings\BaseRankDefinition.cs" />
     <Compile Include="Controllers\Rankings\RankEntry.cs" />
     <Compile Include="Controllers\Rankings\RankingsConstants.cs" />
+    <Compile Include="Controllers\Rankings\Rank_GridThreatLevel.cs" />
     <Compile Include="Controllers\Rankings\Rank_CompletedMissions.cs" />
+    <Compile Include="Controllers\Rankings\Rank_Experience.cs" />
+    <Compile Include="Controllers\Rankings\Rank_Honor.cs" />
     <Compile Include="Controllers\SeasonDonationController.cs" />
     <Compile Include="Controllers\Types\FactionType.cs" />
     <Compile Include="Controllers\Grids\ArkGroundBaseController.cs" />
@@ -307,6 +314,7 @@
     <Compile Include="Controllers\Types\StationPrefabCategory.cs" />
     <Compile Include="Controllers\Types\StationPrefabFlag.cs" />
     <Compile Include="Controllers\Types\StationType.cs" />
+    <Compile Include="Controllers\WaterModController.cs" />
     <Compile Include="Entities\Base\HashCode.cs" />
     <Compile Include="Entities\Base\UId.cs" />
     <Compile Include="Entities\Base\UInt128.cs" />

@@ -38,6 +38,7 @@ namespace SEDiscordBridge.Controllers.Economics
         public const string AK1EXPLORERROVER_SUBTYPEID = "AK1ExplorerRover";
         public const string AK2CARGOROVER_SUBTYPEID = "AK2CargoRover";
         public const string AK3DROPPOD_SUBTYPEID = "AK3DropPod";
+        public const string AK4SURVIVALBOAT_SUBTYPEID = "AK4SurvivalBoat";
 
         public const int DEFAULT_COLLATERAL_CONTRACT = 20;
         public const int DEFAULT_DURATION_CONTRACT = 600;
@@ -60,13 +61,22 @@ namespace SEDiscordBridge.Controllers.Economics
                     PriceMultiplier = new Vector2(0.15f, 0.30f)
                 } 
             },
+            {
+                ItensConstants.DAWNDROPSIGNALMARINE_ID,
+                new ShopItemInfo()
+                {
+                    PrefabOrigin = true,
+                    PrefabName = AK4SURVIVALBOAT_SUBTYPEID,
+                    PriceMultiplier = new Vector2(0.6f, 0.7f)
+                }
+            },
             { 
                 ItensConstants.DAWNDROPSIGNALEXPLORER_ID, 
                 new ShopItemInfo() 
                 { 
                     PrefabOrigin = true,
                     PrefabName = AK1EXPLORERROVER_SUBTYPEID,
-                    PriceMultiplier = new Vector2(0.85f, 0.95f)
+                    PriceMultiplier = new Vector2(0.5f, 0.6f)
                 } 
             },
             { 
@@ -75,7 +85,7 @@ namespace SEDiscordBridge.Controllers.Economics
                 {
                     PrefabOrigin = true,
                     PrefabName = AK2CARGOROVER_SUBTYPEID,
-                    PriceMultiplier = new Vector2(0.75f, 0.85f)
+                    PriceMultiplier = new Vector2(0.4f, 0.5f)
                 } 
             },
             { 
@@ -84,7 +94,7 @@ namespace SEDiscordBridge.Controllers.Economics
                 {
                     PrefabOrigin = true,
                     PrefabName = AK3DROPPOD_SUBTYPEID,
-                    PriceMultiplier = new Vector2(0.65f, 0.75f)
+                    PriceMultiplier = new Vector2(0.3f, 0.4f)
                 } 
             }
         };

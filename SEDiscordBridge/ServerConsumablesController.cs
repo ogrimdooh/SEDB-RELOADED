@@ -37,11 +37,60 @@ namespace SEDiscordBridge
 
         }
 
+        public enum DropSignalConsumeLocation
+        {
+            PlanetSurface = 0,
+            Underwater = 1
+        }
+
         public class DropSignalConsumableHandler : ServerConsumableHandler
         {
 
             public string PrefabName { get; set; }
             public string DisplayName { get; set; }
+            public int SpawnFreeArea { get; set; } = 250;
+            public int DeployAltitude { get; set; } = 1000;
+            public DropSignalConsumeLocation ConsumeLocation { get; set; } = DropSignalConsumeLocation.PlanetSurface;
+
+            protected bool IsOnValidPosition(Vector3D pos, MyPlanet planet)
+            {
+                switch (ConsumeLocation)
+                {
+                    case DropSignalConsumeLocation.PlanetSurface:
+                        if (WaterModController.IsRegistered())
+                        {
+                            return !WaterModController.IsUnderwater(pos, planet) && planet.GetHeightFromSurface(pos) <= 1;
+                        }
+                        return planet.GetHeightFromSurface(pos) <= 1;
+                    case DropSignalConsumeLocation.Underwater:
+                        return WaterModController.IsUnderwater(pos, planet);
+                }
+                return false;
+            }
+
+            protected Vector3D GetSpawnPosition(Vector3D pos, MyPlanet planet, out Vector3D up)
+            {
+                up = Vector3D.One;
+                var center = (planet as IMyEntity).GetPosition();
+                switch (ConsumeLocation)
+                {
+                    case DropSignalConsumeLocation.PlanetSurface:
+                        var surface = planet.GetClosestSurfacePointGlobal(pos);
+                        up = Vector3D.Normalize(surface - center);
+                        var spawnPos = surface + (up * DeployAltitude);
+                        return MyEntities.FindFreePlaceCustom(spawnPos, SpawnFreeArea) ?? spawnPos; // Try to avoid spawn inside something
+                    case DropSignalConsumeLocation.Underwater:
+                        if (WaterModController.IsRegistered())
+                        {
+                            var wSurface = WaterModController.GetClosestSurfacePoint(pos, planet);
+                            up = Vector3D.Normalize(wSurface - center);
+                            var wSpawnPos = wSurface + (up * DeployAltitude);
+                            return MyEntities.FindFreePlaceCustom(wSpawnPos, SpawnFreeArea) ?? wSpawnPos; // Try to avoid spawn inside something
+                        }
+                        break;
+                }
+                return Vector3D.Zero;
+            }
 
             public DropSignalConsumableHandler()
             {
@@ -69,17 +118,13 @@ namespace SEDiscordBridge
                             {
                                 Logging.Instance.LogInfo(typeof(ServerConsumablesController), $"Found the planet in the voxels list!");
                                 var planet = voxels.Where(x => x is MyPlanet).Select(x => x as MyPlanet).FirstOrDefault();
-                                if (planet.GetHeightFromSurface(pos) <= 1)
+                                if (IsOnValidPosition(pos, planet))
                                 {
                                     Logging.Instance.LogInfo(typeof(ServerConsumablesController), $"Player is near of the surface!");
                                     if (!GameWatcherController.IsOnSafeZone(pos))
                                     {
                                         Logging.Instance.LogInfo(typeof(ServerConsumablesController), $"Player is not in a safe zone!");
-                                        var surface = planet.GetClosestSurfacePointGlobal(pos);
-                                        var center = (planet as IMyEntity).GetPosition();
-                                        var up = Vector3D.Normalize(surface - center);
-                                        var spawnPos = surface + (up * 1000);
-                                        spawnPos = MyEntities.FindFreePlaceCustom(spawnPos, 250) ?? spawnPos; // Try to avoid spawn inside something
+                                        var spawnPos = GetSpawnPosition(pos, planet, out Vector3D up);
                                         var gridListDummy = new List<IMyCubeGrid>();
                                         var options = SpawningOptions.UseOnlyWorldMatrix | SpawningOptions.SetAuthorship;
                                         MyAPIGateway.PrefabManager.SpawnPrefab(
@@ -220,11 +265,20 @@ namespace SEDiscordBridge
             DisplayName = "AK-3 Drop Pod"
         };
 
+        public static DropSignalConsumableHandler DAWNDROPSIGNALMARINE_HANDLER = new DropSignalConsumableHandler()
+        {
+            Id = ItensConstants.DAWNDROPSIGNALMARINE_ID,
+            PrefabName = EconomicsConstants.AK4SURVIVALBOAT_SUBTYPEID,
+            DisplayName = "AK-4 Survival Boat",
+            ConsumeLocation = DropSignalConsumeLocation.Underwater
+        };
+
         public static readonly Dictionary<UniqueEntityId, ServerConsumableHandler> CONSUMABLE_HANDLERS = new Dictionary<UniqueEntityId, ServerConsumableHandler>()
         {
             { ItensConstants.DAWNDROPSIGNALEXPLORER_ID, DAWNDROPSIGNALEXPLORER_HANDLER },
             { ItensConstants.DAWNDROPSIGNALLITE_ID, DAWNDROPSIGNALLITE_HANDLER },
-            { ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, DAWNDROPSIGNALSURVIVAL_HANDLER }
+            { ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, DAWNDROPSIGNALSURVIVAL_HANDLER },
+            { ItensConstants.DAWNDROPSIGNALMARINE_ID, DAWNDROPSIGNALMARINE_HANDLER }
         };
 
         public static void Init()

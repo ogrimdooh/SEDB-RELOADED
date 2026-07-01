@@ -11,8 +11,12 @@ namespace SEDiscordBridge.Storage.Player
     public class PlayerStorage
     {
 
+        public const float EXP_BY_KILL = 500f;
+        public const float EXP_BY_NPC_KILL = 50f;
+
         private const string KEY_DID_JUMP = "DID_JUMP";
         private const string KEY_JUMP_COUNT = "JUMP_COUNT";
+        private const string KEY_FIRST_SPAWN = "FIRST_SPAWN";
 
         private const string KEY_DID_REGISTERLOCATION = "DID_REGISTERLOCATION";
         private const string KEY_LASTLOCATION_ISGRAVITY = "LASTLOCATION_ISGRAVITY";
@@ -21,6 +25,10 @@ namespace SEDiscordBridge.Storage.Player
 
         private const string KEY_DID_KILL = "DID_KILL";
         private const string KEY_KILL_COUNT = "KILL_COUNT";
+        private const string KEY_NPC_KILL_COUNT = "NPC_KILL_COUNT";
+
+        private const string KEY_REPUTATION = "REPUTATION";
+        private const string KEY_KARMA = "KARMA";
 
         private const string KEY_DID_COMPLETE_CONTRACT = "DID_COMPLETE_CONTRACT";
         private const string KEY_COMPLETE_CONTRACT_COUNT = "COMPLETE_CONTRACT_COUNT_{0}";
@@ -28,6 +36,20 @@ namespace SEDiscordBridge.Storage.Player
 
         private const string KEY_PROFESSION = "PROFESSION";
         private const string KEY_LAST_RESPAWN_GRID = "LAST_RESPAWN_GRID";
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public bool FirstSpawn
+        {
+            get
+            {
+                return GetValue<bool>(KEY_FIRST_SPAWN);
+            }
+            set
+            {
+                SetValue(KEY_FIRST_SPAWN, value);
+            }
+        }
 
         [XmlIgnore]
         [JsonIgnore]
@@ -129,6 +151,20 @@ namespace SEDiscordBridge.Storage.Player
 
         [XmlIgnore]
         [JsonIgnore]
+        public int NpcKillCount
+        {
+            get
+            {
+                return GetValue<int>(KEY_NPC_KILL_COUNT);
+            }
+            set
+            {
+                SetValue(KEY_NPC_KILL_COUNT, value);
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
         public bool DidCompleteContract
         {
             get
@@ -180,6 +216,64 @@ namespace SEDiscordBridge.Storage.Player
             set
             {
                 SetValue(KEY_ALL_CONTRACTS_COUNT, value);
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public long Reputation
+        {
+            get
+            {
+                return GetValue<long>(KEY_REPUTATION);
+            }
+            set
+            {
+                SetValue(KEY_REPUTATION, value);
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public long Karma
+        {
+            get
+            {
+                return GetValue<long>(KEY_KARMA);
+            }
+            set
+            {
+                SetValue(KEY_KARMA, value);
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public long FinalReputation
+        {
+            get
+            {
+                return Reputation - Karma;
+            }
+        }
+
+        [XmlIgnore]
+        [JsonIgnore]
+        public float KillExperience
+        {
+            get
+            {
+                return (KillCount * EXP_BY_KILL) + (NpcKillCount * EXP_BY_NPC_KILL);
+            }
+        }
+        
+        [XmlIgnore]
+        [JsonIgnore]
+        public float FinalExperience
+        {
+            get
+            {
+                return KillExperience + Reputation;
             }
         }
 
