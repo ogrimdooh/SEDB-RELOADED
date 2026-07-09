@@ -39,6 +39,7 @@ namespace SEDiscordBridge.Controllers.Economics
         public const string AK2CARGOROVER_SUBTYPEID = "AK2CargoRover";
         public const string AK3DROPPOD_SUBTYPEID = "AK3DropPod";
         public const string AK4SURVIVALBOAT_SUBTYPEID = "AK4SurvivalBoat";
+        public const string AK6ATMVOYAGER_SUBTYPEID = "AK6AtmVoyager";
 
         public const int DEFAULT_COLLATERAL_CONTRACT = 20;
         public const int DEFAULT_DURATION_CONTRACT = 600;
@@ -62,12 +63,21 @@ namespace SEDiscordBridge.Controllers.Economics
                 } 
             },
             {
+                ItensConstants.DAWNDROPSIGNALVOYAGER_ID,
+                new ShopItemInfo()
+                {
+                    PrefabOrigin = true,
+                    PrefabName = AK6ATMVOYAGER_SUBTYPEID,
+                    PriceMultiplier = new Vector2(0.7f, 1.0f)
+                }
+            },
+            {
                 ItensConstants.DAWNDROPSIGNALMARINE_ID,
                 new ShopItemInfo()
                 {
                     PrefabOrigin = true,
                     PrefabName = AK4SURVIVALBOAT_SUBTYPEID,
-                    PriceMultiplier = new Vector2(0.6f, 0.7f)
+                    PriceMultiplier = new Vector2(0.6f, 0.85f)
                 }
             },
             { 
@@ -76,7 +86,7 @@ namespace SEDiscordBridge.Controllers.Economics
                 { 
                     PrefabOrigin = true,
                     PrefabName = AK1EXPLORERROVER_SUBTYPEID,
-                    PriceMultiplier = new Vector2(0.5f, 0.6f)
+                    PriceMultiplier = new Vector2(0.5f, 0.7f)
                 } 
             },
             { 
@@ -85,7 +95,7 @@ namespace SEDiscordBridge.Controllers.Economics
                 {
                     PrefabOrigin = true,
                     PrefabName = AK2CARGOROVER_SUBTYPEID,
-                    PriceMultiplier = new Vector2(0.4f, 0.5f)
+                    PriceMultiplier = new Vector2(0.4f, 0.55f)
                 } 
             },
             { 

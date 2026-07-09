@@ -152,6 +152,7 @@ namespace SEDiscordBridge
                                                     {
                                                         foreach (var parachute in parachutes)
                                                         {
+                                                            parachute.Enabled = true;
                                                             parachute.AutoDeploy = true;
                                                             var pInv = parachute.GetInventory();
                                                             if (pInv != null)
@@ -273,12 +274,20 @@ namespace SEDiscordBridge
             ConsumeLocation = DropSignalConsumeLocation.Underwater
         };
 
+        public static DropSignalConsumableHandler DAWNDROPSIGNALVOYAGER_HANDLER = new DropSignalConsumableHandler()
+        {
+            Id = ItensConstants.DAWNDROPSIGNALVOYAGER_ID,
+            PrefabName = EconomicsConstants.AK6ATMVOYAGER_SUBTYPEID,
+            DisplayName = "AK-6 Atm. Voyager"
+        };
+
         public static readonly Dictionary<UniqueEntityId, ServerConsumableHandler> CONSUMABLE_HANDLERS = new Dictionary<UniqueEntityId, ServerConsumableHandler>()
         {
             { ItensConstants.DAWNDROPSIGNALEXPLORER_ID, DAWNDROPSIGNALEXPLORER_HANDLER },
             { ItensConstants.DAWNDROPSIGNALLITE_ID, DAWNDROPSIGNALLITE_HANDLER },
             { ItensConstants.DAWNDROPSIGNALSURVIVAL_ID, DAWNDROPSIGNALSURVIVAL_HANDLER },
-            { ItensConstants.DAWNDROPSIGNALMARINE_ID, DAWNDROPSIGNALMARINE_HANDLER }
+            { ItensConstants.DAWNDROPSIGNALMARINE_ID, DAWNDROPSIGNALMARINE_HANDLER },
+            { ItensConstants.DAWNDROPSIGNALVOYAGER_ID, DAWNDROPSIGNALVOYAGER_HANDLER }
         };
 
         public static void Init()

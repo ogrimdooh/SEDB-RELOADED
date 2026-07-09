@@ -4,6 +4,7 @@ using Sandbox.Game.Entities.Blocks;
 using Sandbox.Game.Entities.Cube;
 using Sandbox.Game.EntityComponents;
 using Sandbox.Game.GameSystems.BankingAndCurrency;
+using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using Sandbox.ModAPI;
 using SEDiscordBridge.Controllers.Economics;
@@ -200,7 +201,8 @@ damaged blocks.
         protected void LoadServices()
         {
             VALID_SERVICES.Clear();
-            AddService(TERMINAL_SERVICE_TYPE_REPAIRVESSEL, TERMINAL_SERVICE_REPAIRVESSEL);
+            if (HasRepairService())
+                AddService(TERMINAL_SERVICE_TYPE_REPAIRVESSEL, TERMINAL_SERVICE_REPAIRVESSEL);
             OnLoadServices();
         }
 
@@ -593,14 +595,14 @@ Confirm repair operation?
                         }
                         if (MyBankingSystem.ChangeBalance(terminal.LoggedPlayer, -cost))
                         {
-                            if (ActiveFunctionalGridController.RepairAllGridBlocks(grid))
+                            MyAPIGateway.Utilities.InvokeOnGameThread(() =>
                             {
-                                return INTERFACE_TYPE_REPAIRDONE;
-                            }
-                            else
-                            {
-                                MyBankingSystem.ChangeBalance(terminal.LoggedPlayer, cost);
-                            }
+                                if (!ActiveFunctionalGridController.RepairAllGridBlocks(grid))
+                                {
+                                    MyBankingSystem.ChangeBalance(terminal.LoggedPlayer, cost);
+                                }
+                            });
+                            return INTERFACE_TYPE_REPAIRDONE;
                         }
                         return INTERFACE_TYPE_NOVESSELCONNECTED;
                     case ArkTerminalAction.Num2:
@@ -771,8 +773,12 @@ The vessel is cleared for launch.
             private void DoRefreshComputerText(ArkTerminalInterface tObj)
             {
                 var text = tObj.GetText(Properties);
-                ComputerPanelComponent.ChangeText(0, text);
-                GameWatcherController.SendLcdTextChange(0, Computer.EntityId, text);
+                MyAPIGateway.Utilities.InvokeOnGameThread(() =>
+                {
+                    ComputerPanelComponent.GetSurface(0).WriteText(text, false);
+                    Computer.SyncFlag = true;
+                    GameWatcherController.SendLcdTextChange(0, Computer.EntityId, text);
+                });
             }
 
             private void DoInteractCurrentInterface(ArkTerminalAction action, long playerId)
@@ -829,9 +835,18 @@ The vessel is cleared for launch.
 
         public MyCubeGrid ARKGRID { get; protected set; }
         public IMyGridTerminalSystem ARKGRIDTERMINALSYSTEM { get; protected set; }
+        public List<IMyBlockGroup> ARKGRIDGROUPS { get; protected set; } = new List<IMyBlockGroup>();
         public MyStoreBlock ARKGRIDSTOREBLOCK { get; protected set; }
         public MyCargoContainer ARKGRIDSTORECARGOBLOCK { get; protected set; }
         public MyContractBlock ARKGRIDCONTRACTBLOCK { get; protected set; }
+
+        public bool HasEconomy
+        {
+            get
+            {
+                return ARKGRIDSTOREBLOCK != null && ARKGRIDCONTRACTBLOCK != null;
+            }
+        }
 
         protected ConcurrentDictionary<int, IArkTerminalBocks> ARKGRIDTERMINALS = new ConcurrentDictionary<int, IArkTerminalBocks>();
 
@@ -847,6 +862,7 @@ The vessel is cleared for launch.
         public abstract StationLevel GetStationLevel();
         public abstract FactionType GetFactionType();
         protected abstract Vector2 GetEconomyCycleTime();
+        protected abstract bool HasRepairService();
 
         protected abstract IArkTerminalBocks CreateNewTerminalBlock(string name);
 
@@ -854,8 +870,10 @@ The vessel is cleared for launch.
 
         protected long _economyCycleTime = 0;
         protected DateTime _lastEconomyCycle = DateTime.Now;
-        protected void DoEconomyCycle()
+        protected void DoEconomyCycle(bool force)
         {
+            if (!HasEconomy && !force)
+                return;
             var cycleTime = GetEconomyCycleTime();
             _economyCycleTime = (long)(cycleTime.GetRandom() * 1000);
             _lastEconomyCycle = DateTime.Now;
@@ -943,13 +961,13 @@ The vessel is cleared for launch.
                 _initialized = false;
             }
 
-            DoEconomyCycle();
+            DoEconomyCycle(true);
 
-            var groups = new List<IMyBlockGroup>();
-            ARKGRIDTERMINALSYSTEM.GetBlockGroups(groups);
+            ARKGRIDGROUPS.Clear();
+            ARKGRIDTERMINALSYSTEM.GetBlockGroups(ARKGRIDGROUPS);
 
             int c = 0;
-            foreach (IMyBlockGroup group in groups.Where(x => x.Name.ToString().StartsWith("ARK-PC-")))
+            foreach (IMyBlockGroup group in ARKGRIDGROUPS.Where(x => x.Name.ToString().StartsWith("ARK-PC-")))
             {
                 var blocks = new List<IMyTerminalBlock>();
                 group.GetBlocks(blocks);
@@ -981,24 +999,29 @@ The vessel is cleared for launch.
 
             _initialized = true;
 
-            canRun = true;
-            task = MyAPIGateway.Parallel.StartBackground(() =>
+            if (HasEconomy)
             {
-                Logging.Instance.LogInfo(GetType(), "StartBackground [CheckTerminals START]");
-                // Loop CheckTerminals
-                while (canRun)
+
+                canRun = true;
+                task = MyAPIGateway.Parallel.StartBackground(() =>
                 {
-                    CheckTerminals();
-                    if (IsEconomyCycleDue())
+                    Logging.Instance.LogInfo(GetType(), "StartBackground [CheckTerminals START]");
+                    // Loop CheckTerminals
+                    while (canRun)
                     {
-                        DoEconomyCycle();
+                        CheckTerminals();
+                        if (IsEconomyCycleDue())
+                        {
+                            DoEconomyCycle(false);
+                        }
+                        if (MyAPIGateway.Parallel != null)
+                            MyAPIGateway.Parallel.Sleep(1000);
+                        else
+                            break;
                     }
-                    if (MyAPIGateway.Parallel != null)
-                        MyAPIGateway.Parallel.Sleep(1000);
-                    else
-                        break;
-                }
-            });
+                });
+
+            }
 
         }
 

@@ -287,6 +287,7 @@
     <Compile Include="Controllers\Economics\MyCustomContract_TypeSearchStrategy.cs" />
     <Compile Include="Controllers\FactionsController.cs" />
     <Compile Include="Controllers\Grids\ActiveFunctionalGridController.cs" />
+    <Compile Include="Controllers\Grids\ArkGrindingServiceController.cs" />
     <Compile Include="Controllers\Grids\GridObserverController.cs" />
     <Compile Include="Controllers\Grids\MyCubeGridExtraData.cs" />
     <Compile Include="Controllers\Players\PlayerLevelController.cs" />
@@ -391,6 +392,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Deploy.ps1" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

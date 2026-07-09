@@ -110,6 +110,11 @@ and added to the current Ark Jump objectives.
             return new Vector2(1350, 2250);
         }
 
+        protected override bool HasRepairService()
+        {
+            return true;
+        }
+
         protected override void OnLoadServices()
         {
             AddService(TERMINAL_SERVICE_TYPE_SUBMITRESOURCES, TERMINAL_SERVICE_SUBMITRESOURCES);

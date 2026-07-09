@@ -703,6 +703,9 @@ namespace SEDiscordBridge
                 {
                     Logging.Instance.LogWarning(typeof(GameWatcherController), "DDBridge not found when Session Ready!");
                 }
+                var waterDensity = 1024f * 1.25f; // 1.25 of default value
+                WaterModController.SetWaterDensityToAllPlanets(waterDensity);
+                WaterModController.SetPlayerMaximumPressure(waterDensity * 6);
                 FactionsController.MakePirateFactionsEnemiesOfEveryOne();
                 FactionsController.ResetMainFactionBank();
                 EconomicsConstants.Init();
@@ -713,6 +716,7 @@ namespace SEDiscordBridge
                 /* Inicializa */
                 ArkLogisticRelayController.Init();
                 ArkGroundBaseController.Init();
+                ArkGrindingServiceController.Init();
             }
             catch (Exception e)
             {

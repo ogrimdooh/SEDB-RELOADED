@@ -1,6 +1,8 @@
 ﻿using Sandbox.Game.Entities;
+using Sandbox.Game.Entities.Cube;
 using System.Collections.Concurrent;
 using System.Linq;
+using VRage.Game.ModAPI;
 using VRage.Library.Utils;
 
 namespace SEDiscordBridge.Controllers.Grids
@@ -39,14 +41,24 @@ namespace SEDiscordBridge.Controllers.Grids
             {
                 if (item.BuildLevelRatio < 1f)
                 {
-                    item.SetIntegrity_Server(item.MaxIntegrity, item.MaxIntegrity, VRage.Game.ModAPI.MyIntegrityChangeEnum.Repair, item.OwnerId);
+                    item.SetIntegrity(item.MaxIntegrity, item.MaxIntegrity, VRage.Game.ModAPI.MyIntegrityChangeEnum.Repair, item.OwnerId);
                     hadRepair = true;
                 }
                 if (item.HasDeformation)
                 {
                     item.DeformationRatio = 0f;
-                    item.CubeGrid.ResetBlockSkeleton(item, true);
                     hadRepair = true;
+                }
+                if (hadRepair)
+                {
+                    item.UpdateVisual();
+                    item.UpgradeBuildLevel();
+                    item.ResumeDamageEffect();
+                    item.CubeGrid.ResetBlockSkeleton(item, true);
+                    grid.SetBlockDirty(item);
+                    grid.RenderData.RemoveDecals(item.Position);
+                    grid.SendIntegrityChanged(item, MyIntegrityChangeEnum.ConstructionEnd, 0L);
+                    grid.OnIntegrityChanged(item, false);
                 }
             }
             return hadRepair;

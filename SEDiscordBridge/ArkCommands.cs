@@ -45,6 +45,10 @@ namespace SEDiscordBridge
                                 needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.FunctionalGrids.GroundBaseEntityId;
                                 SEDBStorage.Instance.FunctionalGrids.GroundBaseEntityId = cockpit.CubeGrid.EntityId;
                                 break;
+                            case "grinding_station":
+                                needReset = cockpit.CubeGrid.EntityId != SEDBStorage.Instance.FunctionalGrids.GrindingServiceEntityId;
+                                SEDBStorage.Instance.FunctionalGrids.GrindingServiceEntityId = cockpit.CubeGrid.EntityId;
+                                break;
                         }
                         Log.Info($"Ark interactive grid for '{entry}' configure to {cockpit.CubeGrid.DisplayName} [{cockpit.CubeGrid.EntityId}]");
                         if (needReset)
@@ -57,6 +61,9 @@ namespace SEDiscordBridge
                                 case "ground_base":
                                     ArkGroundBaseController.Init();
                                     break;
+                                case "grinding_station":
+                                    ArkGrindingServiceController.Init();
+                                    break;
                             }
                         }
                     }
@@ -68,6 +75,7 @@ namespace SEDiscordBridge
                 case "reset":
                     ArkLogisticRelayController.Init();
                     ArkGroundBaseController.Init();
+                    ArkGrindingServiceController.Init();
                     break;
             }
 

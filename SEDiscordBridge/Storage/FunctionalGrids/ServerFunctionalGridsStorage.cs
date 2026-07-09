@@ -64,6 +64,9 @@ namespace SEDiscordBridge.Storage.FunctionalGrids
         [XmlElement]
         public long GroundBaseEntityId { get; set; }
 
+        [XmlElement]
+        public long GrindingServiceEntityId { get; set; }
+
     }
 
 }

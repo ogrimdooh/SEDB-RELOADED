@@ -34,6 +34,9 @@ namespace SEDiscordBridge.Controllers
         public const string DAWNDROPSIGNALMARINE_SUBTYPEID = "DAWNDropSignalMarine";
         public static readonly UniqueEntityId DAWNDROPSIGNALMARINE_ID = new UniqueEntityId(typeof(MyObjectBuilder_ConsumableItem), DAWNDROPSIGNALMARINE_SUBTYPEID);
 
+        public const string DAWNDROPSIGNALVOYAGER_SUBTYPEID = "DAWNDropSignalVoyager";
+        public static readonly UniqueEntityId DAWNDROPSIGNALVOYAGER_ID = new UniqueEntityId(typeof(MyObjectBuilder_ConsumableItem), DAWNDROPSIGNALVOYAGER_SUBTYPEID);
+
         public const string COFFEE_SUBTYPEID = "Coffee";
         public static readonly UniqueEntityId COFFEE_ID = new UniqueEntityId(typeof(MyObjectBuilder_ConsumableItem), COFFEE_SUBTYPEID);
 

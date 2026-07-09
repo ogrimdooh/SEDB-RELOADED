@@ -63,6 +63,11 @@ namespace SEDiscordBridge.Controllers.Grids
             return new Vector2(1350, 2250);
         }
 
+        protected override bool HasRepairService()
+        {
+            return true;
+        }
+
         protected override void OnLoadServices()
         {
 
