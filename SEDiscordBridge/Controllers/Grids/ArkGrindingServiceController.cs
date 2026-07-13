@@ -72,7 +72,7 @@ it is operating.",
             },
             OnInteract = (controller, terminal, action, playerId) =>
             {
-                return INTERFACE_TYPE_SERVICESELECT;
+                return INTERFACE_TYPE_HOME;
             }
         };
 

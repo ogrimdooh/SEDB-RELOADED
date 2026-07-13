@@ -16,6 +16,7 @@ using SEDiscordBridge.Patches;
 using SEDiscordBridge.Storage;
 using SEDiscordBridge.Storage.FunctionalGrids;
 using SEDiscordBridge.Storage.Player;
+using SEDiscordBridge.Storage.Profession;
 using SEDiscordBridge.Storage.SeasonMeta;
 using System;
 using System.Collections.Concurrent;
@@ -33,7 +34,7 @@ using VRage.Game.ObjectBuilders.Components;
 using VRage.Game.ObjectBuilders.Definitions.SessionComponents;
 using VRage.Utils;
 using VRageMath;
-using static SEDiscordBridge.Patches.MyDamageInformationExtensions;
+using static SEDiscordBridge.Extensions.MyDamageInformationExtensions;
 using static VRage.Dedicated.Configurator.SelectInstanceForm;
 
 namespace SEDiscordBridge
@@ -196,6 +197,15 @@ namespace SEDiscordBridge
                     playerStorage.SetCompleteContractCount(definition.StrategyType, completeContractCount + 1);
                     playerStorage.AllContractsCount = playerStorage.AllContractsCount + 1;
                     playerStorage.Reputation += contract.RewardReputation;
+                    // Check player profession
+                    if (ProfessionStorage.PROFESSIONS.ContainsKey(playerStorage.Profession))
+                    {
+                        var profession = ProfessionStorage.PROFESSIONS[playerStorage.Profession];
+                        if (profession != null)
+                        {
+                            profession.OnFinishContract(steamId, contract);
+                        }
+                    }
                     // Register a donation when contract is a deliver one
                     if (contract is MyContractObtainAndDeliver obtainAndDeliver)
                     {

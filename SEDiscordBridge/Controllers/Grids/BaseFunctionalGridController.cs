@@ -857,6 +857,13 @@ The vessel is cleared for launch.
         protected bool canRun;
         protected ParallelTasks.Task task;
 
+        public IArkTerminalBocks GetFirstTerminal()
+        {
+            if (ARKGRIDTERMINALS.Any())
+                return ARKGRIDTERMINALS.First().Value;
+            return null;
+        }
+
         public abstract long GetTargetGridId();
         public abstract StationType GetStationType();
         public abstract StationLevel GetStationLevel();
@@ -999,29 +1006,27 @@ The vessel is cleared for launch.
 
             _initialized = true;
 
-            if (HasEconomy)
+            canRun = true;
+            task = MyAPIGateway.Parallel.StartBackground(() =>
             {
-
-                canRun = true;
-                task = MyAPIGateway.Parallel.StartBackground(() =>
+                Logging.Instance.LogInfo(GetType(), "StartBackground [CheckTerminals START]");
+                // Loop CheckTerminals
+                while (canRun)
                 {
-                    Logging.Instance.LogInfo(GetType(), "StartBackground [CheckTerminals START]");
-                    // Loop CheckTerminals
-                    while (canRun)
+                    CheckTerminals();
+                    if (HasEconomy)
                     {
-                        CheckTerminals();
                         if (IsEconomyCycleDue())
                         {
                             DoEconomyCycle(false);
                         }
-                        if (MyAPIGateway.Parallel != null)
-                            MyAPIGateway.Parallel.Sleep(1000);
-                        else
-                            break;
                     }
-                });
-
-            }
+                    if (MyAPIGateway.Parallel != null)
+                        MyAPIGateway.Parallel.Sleep(1000);
+                    else
+                        break;
+                }
+            });
 
         }
 

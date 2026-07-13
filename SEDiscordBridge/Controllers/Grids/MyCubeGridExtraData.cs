@@ -263,6 +263,46 @@ namespace SEDiscordBridge.Controllers.Grids
             }
         }
 
+        public bool HasAnyGun
+        {
+            get
+            {
+                return Guns.Any();
+            }
+        }
+
+        public bool HasAnyTurret
+        {
+            get
+            {
+                return Turrets.Any();
+            }
+        }
+
+        public bool HasWeapon
+        {
+            get
+            {
+                return HasAnyGun || HasAnyTurret;
+            }
+        }
+
+        public bool AnyWeaponIsFunctional
+        {
+            get
+            {
+                return HasWeapon && AllWeapons.Any(x => x.IsFunctional);
+            }
+        }
+
+        public IEnumerable<MyCubeBlock> AllWeapons
+        {
+            get
+            {
+                return Guns.Concat(Turrets);
+            }
+        }
+
         private MyCubeGrid _grid;
         public MyCubeGrid Grid
         {

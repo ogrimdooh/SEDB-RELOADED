@@ -340,6 +340,8 @@
     <Compile Include="Patches\ContainerOpenedPatch.cs" />
     <Compile Include="Patches\GridJumpedPatch.cs" />
     <Compile Include="Patches\MyContractGridHaulingPatch.cs" />
+    <Compile Include="Patches\MyDamageSystemPatch.cs" />
+    <Compile Include="Patches\MySlimBlockPatch.cs" />
     <Compile Include="Patches\PatchController.cs" />
     <Compile Include="Patches\PlayerJoinedPatch.cs" />
     <Compile Include="Patches\PlayerLeftPatch.cs" />

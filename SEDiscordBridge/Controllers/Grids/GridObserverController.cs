@@ -43,6 +43,15 @@ namespace SEDiscordBridge.Controllers.Grids
             _initialized = false;
         }
 
+        public static MyCubeGridExtraData GetGridExtraData(long gridId)
+        {
+            if (GRID_EXTRADATA.TryGetValue(gridId, out var extraData))
+            {
+                return extraData;
+            }
+            return null;
+        }
+
         public static IEnumerable<MyCubeGridExtraData> GetGridsExtraData()
         {
             return GRID_EXTRADATA.Values;

@@ -1734,7 +1734,7 @@ The Second Dawn recognizes their new operational role.";
                     {
                         Log.Info("Updating existing start message...");
                         // Atualiza a mensagem geral
-                        var generalMsgId = SEDBStorage.Instance.Bank.StartMsgId;
+                        var generalMsgId = SEDBStorage.Instance.Profession.StartMsgId;
                         var generalMsg = messages.FirstOrDefault(m => m.Id == generalMsgId);
                         if (generalMsg != null && generalMsg.Content.CompareTo(startMsg) != 0)
                         {

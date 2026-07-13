@@ -1,5 +1,6 @@
 ﻿using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
+using SEDiscordBridge.Patches;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRage.Utils;
 
-namespace SEDiscordBridge.Patches
+namespace SEDiscordBridge.Extensions
 {
     public static class MyDamageInformationExtensions
     {
@@ -58,6 +59,11 @@ namespace SEDiscordBridge.Patches
             { DamageType.Asphyxia, new MyStringHash[] { MyDamageType.Asphyxia, MyDamageType.LowPressure } },
             { DamageType.Other, new MyStringHash[] { MyDamageType.Destruction, MyDamageType.OutOfBounds } }
         };
+
+        public static bool IsDeformation(this MyDamageInformation damage)
+        {
+            return damage.Type == MyDamageType.Deformation;
+        }
 
         public static DamageType GetDamageType(MyStringHash source)
         {
