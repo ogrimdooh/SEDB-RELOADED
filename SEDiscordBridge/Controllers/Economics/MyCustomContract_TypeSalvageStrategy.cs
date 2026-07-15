@@ -7,6 +7,7 @@ using Sandbox.Game.Multiplayer;
 using Sandbox.Game.World;
 using Sandbox.Game.World.Generator;
 using SEDiscordBridge.Controllers.Types;
+using SEDiscordBridge.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -187,6 +188,9 @@ namespace SEDiscordBridge.Controllers.Economics
 
             double num2 = (vector3D - position).Length();
             long rewardMoney = GetMoneyRewardForSalvageContract(myContractTypeSalvageDefinition.MinimumMoney, num2, myContractTypeSalvageDefinition.DistanceRewardMultiplier) / 1000 * 1000;
+            rewardMoney -= (long)((prefabItem.BaseValue - prefabItem.RepairCost) * new Vector2(0.5f, 0.75f).GetRandom());
+            var minReward = (long)(myContractTypeSalvageDefinition.MinimumMoney * new Vector2(0.1f, 0.25f).GetRandom());
+            rewardMoney = Math.Max(rewardMoney, minReward);
             long num3 = MyEntityIdentifier.AllocateId(MyEntityIdentifier.ID_OBJECT_TYPE.CONTRACT);
             if (myContractTypeSalvageDefinition.SalvageItemIds == null || myContractTypeSalvageDefinition.SalvageItemIds.Count == 0)
             {

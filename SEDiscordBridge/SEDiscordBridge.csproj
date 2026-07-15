@@ -290,6 +290,9 @@
     <Compile Include="Controllers\Grids\ArkGrindingServiceController.cs" />
     <Compile Include="Controllers\Grids\GridObserverController.cs" />
     <Compile Include="Controllers\Grids\MyCubeGridExtraData.cs" />
+    <Compile Include="Controllers\IngotsConstants.cs" />
+    <Compile Include="Controllers\LootConstants.cs" />
+    <Compile Include="Controllers\OreConstants.cs" />
     <Compile Include="Controllers\Players\PlayerLevelController.cs" />
     <Compile Include="Controllers\Players\PlayerLevelInfo.cs" />
     <Compile Include="Controllers\PrefabPriceController.cs" />
@@ -327,6 +330,7 @@
     <Compile Include="Entities\Command.cs" />
     <Compile Include="Extensions\FlagsUtils.cs" />
     <Compile Include="Extensions\IMyCharacterExtensions.cs" />
+    <Compile Include="Extensions\IMyCubeGridExtension.cs" />
     <Compile Include="Extensions\IMyPlayerExtensions.cs" />
     <Compile Include="Extensions\InventoryUtils.cs" />
     <Compile Include="Extensions\MyDamageInformationExtensions.cs" />
